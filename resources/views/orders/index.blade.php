@@ -12,11 +12,11 @@
 <table>
     <thead>
         <tr>
-            <th><i class="fas fa-hashtag"></i> Order ID</th>
-            <th><i class="fas fa-user"></i> Customer</th>
-            <th><i class="fas fa-money-bill-wave"></i> Total Amount</th>
-            <th><i class="fas fa-tag"></i> Status</th>
-            <th><i class="fas fa-cogs"></i> Actions</th>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Total Amount</th>
+            <th>Status</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -26,23 +26,19 @@
             <td>{{ $order->customer->full_name }}</td>
             <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
-                @if($order->status === 'pending')
-                    <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                        <i class="fas fa-hourglass-half"></i> Pending
-                    </span>
-                @elseif($order->status === 'shipping')
-                    <span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                        <i class="fas fa-truck"></i> Shipping
-                    </span>
-                @elseif($order->status === 'rejected')
-                    <span style="background: #fee2e2; color: #7f1d1d; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                        <i class="fas fa-times-circle"></i> Rejected
-                    </span>
-                @else
-                    <span style="background: #ecfdf5; color: #166534; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
-                        <i class="fas fa-check-circle"></i> {{ ucfirst($order->status) }}
-                    </span>
-                @endif
+                <!-- Status Form -->
+                <form action="{{ route('orders.updateStatus', $order) }}" method="POST">
+                    @csrf
+<select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
+                        <option value="pending" {{ $order->status=='pending'?'selected':'' }}>Pending</option>
+                        <option value="shipping" {{ $order->status=='shipping'?'selected':'' }}>Shipping</option>
+                        <option value="rejected" {{ $order->status=='rejected'?'selected':'' }}>Rejected</option>
+                    </select>
+
+                    <!-- hidden input for delivery service -->
+                    <input type="hidden" name="delivery_service" id="delivery_{{ $order->id }}">
+                    <button type="submit" style="display:none;" id="submit_{{ $order->id }}"></button>
+                </form>
             </td>
             <td>
                 <div class="action-buttons">
@@ -58,6 +54,33 @@
         @endforeach
     </tbody>
 </table>
+
+<script>
+function handleStatusChange(select, orderId) {
+    let status = select.value;
+
+    // confirmation
+    if(!confirm("Are you sure you want to change status to " + status + "?")) {
+        select.value = "{{ 'pending' }}"; // reset
+        return;
+    }
+
+    // shipping requires delivery service
+    if(status === "shipping") {
+        let service = prompt("Enter Delivery Service (DHL, FedEx, UPS, etc):");
+        if(!service) {
+            alert("Delivery service is required!");
+            select.value = "{{ 'pending' }}"; // reset
+            return;
+        }
+        document.getElementById("delivery_" + orderId).value = service;
+    }
+
+    // submit the form
+    document.getElementById("submit_" + orderId).click();
+}
+</script>
+
 @else
 <div class="empty-state">
     <i class="fas fa-boxes"></i>

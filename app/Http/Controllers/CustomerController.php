@@ -18,13 +18,32 @@ class CustomerController extends Controller
 
     return redirect('/customers')->with('success', 'Customers imported!');
 }
+public function index(Request $request)
+{
+    $query = Customer::query();
 
-    public function index()
+    // Search
+    if ($request->filled('search')) {
+        $query->where('full_name', 'like', '%' . $request->search . '%');
+    }
+
+    // Sorting
+    $sort = $request->get('sort', 'asc'); // default A-Z
+    $query->orderBy('full_name', $sort);
+
+    // Pagination: default 10, allow user to select
+    $perPage = $request->get('per_page', 10);
+
+    $customers = $query->paginate($perPage)->appends($request->all());
+
+    return view('customers.index', compact('customers', 'sort', 'perPage'));
+}
+    /*public function index()
     {
         $customers = Customer::all();
         return view('customers.index', compact('customers'));
     }
-
+*/
     public function create()
     {
         return view('customers.create');

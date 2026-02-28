@@ -6,6 +6,17 @@
 </div>
 
 @if($orders->count() > 0)
+<form method="GET" style="margin-bottom: 10px;">
+    <label for="per_page">Show:</label>
+    <select name="per_page" id="per_page" onchange="this.form.submit()">
+        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
+        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
+        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+    </select>
+</form>
+
+
 <table>
     <thead>
         <tr>
@@ -30,6 +41,9 @@
         @endforeach
     </tbody>
 </table>
+   <div class="d-flex justify-content-center mt-3">
+    {{ $orders->appends(request()->query())->links('pagination::bootstrap-5') }}
+</div>
 @else
 <div class="empty-state">
     <i class="fas fa-hourglass-half"></i>

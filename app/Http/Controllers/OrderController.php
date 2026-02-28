@@ -64,12 +64,14 @@ class OrderController extends Controller
     }
 
     // Optional: show all pending orders
-    public function pending()
-    {
-        $orders = Order::where('status', 'pending')->with('customer')->get();
-        return view('orders.pending', compact('orders'));
-    }
-
+  public function pending(Request $request)
+{
+    $perPage = $request->input('per_page', 10); // default 10 per page
+    $orders = Order::where('status', 'pending')
+                ->with('customer')
+                ->paginate($perPage);
+    return view('orders.pending', compact('orders'));
+}
     // Show all orders
     public function index()
     {
@@ -90,4 +92,21 @@ class OrderController extends Controller
         $orders = Order::where('status', 'rejected')->with('customer')->get();
         return view('orders.rejected', compact('orders'));
     }
+    public function updateStatus(Request $request, Order $order)
+{
+    $request->validate([
+        'status' => 'required|in:pending,shipping,rejected',
+        'delivery_service' => 'nullable|string|max:255'
+    ]);
+
+    if ($request->status === 'shipping' && !$request->delivery_service) {
+        return back()->with('error', 'Please select delivery service.');
+    }
+
+    $order->status = $request->status;
+    $order->delivery_service = $request->delivery_service;
+    $order->save();
+
+    return back()->with('success', 'Order status updated successfully!');
+}
 }

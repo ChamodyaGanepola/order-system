@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Order System</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Add this inside <head> -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 <style>
 :root {
     --primary: #1e293b;
@@ -427,6 +429,63 @@ textarea {
     }
 }
 </style>
+<style>
+/* Custom Pagination Styles */
+.custom-pagination {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+}
+.custom-pagination .pagination {
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 0;
+}
+.custom-pagination .page-item {
+    display: inline-block;
+}
+.custom-pagination .page-link {
+    color: var(--primary);
+    background: var(--white);
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 6px 14px;
+    margin: 0 2px;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+}
+.custom-pagination .page-item.active .page-link {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+.custom-pagination .page-item.disabled .page-link {
+    color: #b0b0b0;
+    background: #f3f4f6;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+}
+.custom-pagination .pagination-summary {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+@media (max-width: 600px) {
+    .custom-pagination .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .custom-pagination .page-link {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    .custom-pagination .pagination-summary {
+        font-size: 12px;
+    }
+}
+</style>
 </head>
 
 <body>
@@ -441,6 +500,7 @@ textarea {
 
     <ul class="nav-menu">
         <li><a href="/customers" class="nav-link"><i class="fas fa-users"></i> Customers</a></li>
+        <li><a href="/products" class="nav-link"><i class="fas fa-box"></i> Products</a></li>
         <li><a href="/orders" class="nav-link"><i class="fas fa-boxes"></i> Orders</a></li>
         <li><a href="/orders/pending" class="nav-link"><i class="fas fa-hourglass-half"></i> Pending</a></li>
         <li><a href="/orders/shipping" class="nav-link"><i class="fas fa-truck"></i> Shipping</a></li>
