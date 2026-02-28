@@ -78,7 +78,7 @@
 
     <div class="pagination-wrapper">
 
-    {{ $customers->appends(request()->query())->links('vendor.pagination.bootstrap-5') }}
+    {{ $customers->links('vendor.pagination.bootstrap-5') }}
 
     <span style="white-space: nowrap;">
         Showing {{ $customers->firstItem() }}

@@ -30,10 +30,21 @@
                 <form action="{{ route('orders.updateStatus', $order) }}" method="POST">
                     @csrf
 <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
-                        <option value="pending" {{ $order->status=='pending'?'selected':'' }}>Pending</option>
-                        <option value="shipping" {{ $order->status=='shipping'?'selected':'' }}>Shipping</option>
-                        <option value="rejected" {{ $order->status=='rejected'?'selected':'' }}>Rejected</option>
-                    </select>
+
+    @if($order->status === 'pending')
+        <option value="pending" selected>Pending</option>
+        <option value="shipping">Shipping</option>
+        <option value="rejected">Rejected</option>
+    @elseif($order->status === 'shipping')
+        <option value="shipping" selected>Shipping</option>
+        <option value="rejected">Rejected</option>
+        <option value="pending" disabled>Pending</option>
+    @elseif($order->status === 'rejected')
+        <option value="rejected" selected>Rejected</option>
+        <option value="shipping">Shipping</option>
+        <option value="pending" disabled>Pending</option>
+    @endif
+</select>
 
                     <!-- hidden input for delivery service -->
                     <input type="hidden" name="delivery_service" id="delivery_{{ $order->id }}">
