@@ -30,3 +30,5 @@ Route::get('/orders/shipping', [OrderController::class, 'shipping']);
 Route::get('/orders/rejected', [OrderController::class, 'rejected']);
 Route::post('/orders/{order}/update-status', [OrderController::class, 'updateStatus'])
     ->name('orders.updateStatus');
+Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
+Route::put('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');

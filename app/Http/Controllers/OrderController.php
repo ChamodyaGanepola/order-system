@@ -1,12 +1,11 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Customer;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
@@ -22,7 +21,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'products'    => 'required|array'
+            'products'    => 'required|array',
         ]);
 
         $order = Order::create([
@@ -34,11 +33,17 @@ class OrderController extends Controller
         $total = 0;
 
         foreach ($request->products as $productId => $quantity) {
-            if($quantity <= 0) continue; // Skip if quantity is zero
+            if ($quantity <= 0) {
+                continue;
+            }
+            // Skip if quantity is zero
 
             $product = Product::find($productId);
 
-            if (!$product) continue; // Skip if product not found
+            if (! $product) {
+                continue;
+            }
+            // Skip if product not found
 
             $subtotal = $product->price * $quantity;
 
@@ -64,14 +69,14 @@ class OrderController extends Controller
     }
 
     // Optional: show all pending orders
-  public function pending(Request $request)
-{
-    $perPage = $request->input('per_page', 10); // default 10 per page
-    $orders = Order::where('status', 'pending')
-                ->with('customer')
-                ->paginate($perPage);
-    return view('orders.pending', compact('orders'));
-}
+    public function pending(Request $request)
+    {
+        $perPage = $request->input('per_page', 10); // default 10 per page
+        $orders  = Order::where('status', 'pending')
+            ->with('customer')
+            ->paginate($perPage);
+        return view('orders.pending', compact('orders'));
+    }
     // Show all orders
     public function index()
     {
@@ -93,20 +98,63 @@ class OrderController extends Controller
         return view('orders.rejected', compact('orders'));
     }
     public function updateStatus(Request $request, Order $order)
+    {
+        $request->validate([
+            'status'           => 'required|in:pending,shipping,rejected',
+            'delivery_service' => 'nullable|string|max:255',
+        ]);
+
+        if ($request->status === 'shipping' && ! $request->delivery_service) {
+            return back()->with('error', 'Please select delivery service.');
+        }
+
+        $order->status           = $request->status;
+        $order->delivery_service = $request->delivery_service;
+        $order->save();
+
+        return back()->with('success', 'Order status updated successfully!');
+    }
+    public function edit(Order $order)
+{
+    $products = Product::all(); // all products to show in form
+    $orderItems = $order->items->keyBy('product_id'); // existing order items keyed by product_id
+    return view('orders.edit', compact('order', 'products', 'orderItems'));
+}
+
+public function update(Request $request, Order $order)
 {
     $request->validate([
-        'status' => 'required|in:pending,shipping,rejected',
-        'delivery_service' => 'nullable|string|max:255'
+        'products' => 'required|array',
     ]);
 
-    if ($request->status === 'shipping' && !$request->delivery_service) {
-        return back()->with('error', 'Please select delivery service.');
+    $total = 0;
+
+    // Remove existing items
+    $order->items()->delete();
+
+    foreach ($request->products as $productId => $quantity) {
+        if($quantity <= 0) continue;
+
+        $product = Product::find($productId);
+        if (!$product) continue;
+
+        $subtotal = $product->price * $quantity;
+
+        $order->items()->create([
+            'product_id' => $product->id,
+            'quantity'   => $quantity,
+            'price'      => $product->price,
+            'subtotal'   => $subtotal,
+        ]);
+
+        $total += $subtotal;
+
+        // optionally update stock if needed
     }
 
-    $order->status = $request->status;
-    $order->delivery_service = $request->delivery_service;
+    $order->total_amount = $total;
     $order->save();
 
-    return back()->with('success', 'Order status updated successfully!');
+    return redirect('/orders')->with('success', 'Order updated successfully!');
 }
 }

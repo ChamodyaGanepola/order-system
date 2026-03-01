@@ -52,15 +52,12 @@
                 </form>
             </td>
             <td>
-                <div class="action-buttons">
-                    <a href="/orders/{{ $order->id }}/edit" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
-                    <a href="/orders/{{ $order->id }}/view" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-eye"></i> View
-                    </a>
-                </div>
-            </td>
+    <div class="action-buttons">
+        <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+    </div>
+</td>
         </tr>
         @endforeach
     </tbody>
