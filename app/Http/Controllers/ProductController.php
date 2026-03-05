@@ -17,33 +17,54 @@ class ProductController extends Controller
     {
         return view('products.create');
     }
+    
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-        ]);
-        Product::create($request->only('name', 'price', 'stock'));
-        return redirect()->route('products.index')->with('success', 'Product added successfully!');
-    }
+ public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'product_code' => 'required|string|max:100|unique:products,product_code',
+        'price' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
+        'other' => 'nullable|string'
+    ]);
+
+    Product::create([
+        'name' => $request->name,
+        'product_code' => $request->product_code,
+        'price' => $request->price,
+        'stock' => $request->stock,
+        'other' => $request->other ? explode(',', $request->other) : null
+    ]);
+
+    return redirect()->route('products.index')->with('success', 'Product added successfully!');
+}
 
     public function edit(Product $product)
     {
         return view('products.edit', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-        ]);
-        $product->update($request->only('name', 'price', 'stock'));
-        return redirect()->route('products.index')->with('success', 'Product updated successfully!');
-    }
+  public function update(Request $request, Product $product)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'product_code' => 'required|string|max:100|unique:products,product_code,' . $product->id,
+        'price' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
+        'other' => 'nullable|string'
+    ]);
+
+    $product->update([
+        'name' => $request->name,
+        'product_code' => $request->product_code,
+        'price' => $request->price,
+        'stock' => $request->stock,
+        'other' => $request->other ? explode(',', $request->other) : null
+    ]);
+
+    return redirect()->route('products.index')->with('success', 'Product updated successfully!');
+}
 
     public function destroy(Product $product)
     {

@@ -25,37 +25,47 @@
             <td><strong>#{{ $order->id }}</strong></td>
             <td>{{ $order->customer->full_name }}</td>
             <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
-            <td>
-                <!-- Status Form -->
-                <form action="{{ route('orders.updateStatus', $order) }}" method="POST">
-                    @csrf
-<select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
-
-    @if($order->status === 'pending')
-        <option value="pending" selected>Pending</option>
-        <option value="shipping">Shipping</option>
-        <option value="rejected">Rejected</option>
-    @elseif($order->status === 'shipping')
-        <option value="shipping" selected>Shipping</option>
-        <option value="rejected">Rejected</option>
-        <option value="pending" disabled>Pending</option>
-    @elseif($order->status === 'rejected')
-        <option value="rejected" selected>Rejected</option>
-        <option value="shipping">Shipping</option>
-        <option value="pending" disabled>Pending</option>
+           <td>
+    @if(in_array($order->status, ['pending', 'shipping']))
+        <!-- Status Form for allowed transitions -->
+        <form action="{{ route('orders.updateStatus', $order) }}" method="POST">
+            @csrf
+            <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
+                @if($order->status === 'pending')
+                    <option value="pending" selected>Pending</option>
+                    <option value="shipping">Shipping</option>
+                    <option value="rejected">Rejected</option>
+                @elseif($order->status === 'shipping')
+                    <option value="shipping" selected>Shipping</option>
+                    <option value="completed">Completed</option>
+                    <option value="rejected">Rejected</option>
+                @endif
+            </select>
+            <input type="hidden" name="delivery_service" id="delivery_{{ $order->id }}">
+            <button type="submit" style="display:none;" id="submit_{{ $order->id }}"></button>
+        </form>
+    @else
+        <!-- Completed or Rejected: just display badge -->
+        @php
+            $statusColors = [
+                'completed' => 'success',
+                'rejected'  => 'danger',
+            ];
+        @endphp
+        <span class="btn btn-{{ $statusColors[$order->status] }} btn-sm" style="pointer-events: none;">
+            {{ ucfirst($order->status) }}
+        </span>
     @endif
-</select>
-
-                    <!-- hidden input for delivery service -->
-                    <input type="hidden" name="delivery_service" id="delivery_{{ $order->id }}">
-                    <button type="submit" style="display:none;" id="submit_{{ $order->id }}"></button>
-                </form>
-            </td>
+</td>
             <td>
     <div class="action-buttons">
         <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm">
             <i class="fas fa-edit"></i> Edit
         </a>
+        <a href="{{ route('orders.show', $order->id) }}"
+   class="btn btn-sm btn-primary">
+   View Order
+</a>
     </div>
 </td>
         </tr>

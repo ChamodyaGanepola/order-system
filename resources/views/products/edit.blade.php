@@ -7,6 +7,17 @@
         @csrf
         @method('PUT')
         <div class="form-group">
+    <label>Product Code</label>
+    <input type="text" name="product_code" class="form-control"
+        value="{{ old('product_code',$product->product_code) }}" required>
+</div>
+
+<div class="form-group">
+    <label>Specifications</label>
+    <input type="text" name="other" class="form-control"
+        value="{{ old('other', implode(',', $product->other ?? [])) }}">
+</div>
+        <div class="form-group">
             <label for="name">📝 Name</label>
             <input type="text" name="name" id="name" class="form-control" required value="{{ old('name', $product->name) }}">
             @error('name')<div class="text-danger">{{ $message }}</div>@enderror

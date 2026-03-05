@@ -90,6 +90,12 @@ class OrderController extends Controller
         $orders = Order::where('status', 'shipping')->with('customer')->get();
         return view('orders.shipping', compact('orders'));
     }
+    public function show($id)
+    {
+        $order = Order::with('customer', 'items.product')->findOrFail($id);
+
+        return view('orders.show', compact('order'));
+    }
 
     // Show rejected orders
     public function rejected()
@@ -97,64 +103,42 @@ class OrderController extends Controller
         $orders = Order::where('status', 'rejected')->with('customer')->get();
         return view('orders.rejected', compact('orders'));
     }
+    public function completed()
+    {
+        $orders = Order::where('status', 'completed')->with('customer')->get();
+        return view('orders.completed', compact('orders'));
+    }
+
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
-            'status'           => 'required|in:pending,shipping,rejected',
+            'status'           => 'required|in:pending,shipping,rejected,completed',
             'delivery_service' => 'nullable|string|max:255',
         ]);
 
-        if ($request->status === 'shipping' && ! $request->delivery_service) {
-            return back()->with('error', 'Please select delivery service.');
+        $current = $order->status;
+        $new     = $request->status;
+
+        // Allowed transitions
+        $allowedTransitions = [
+            'pending'   => ['shipping', 'rejected'],
+            'shipping'  => ['completed', 'rejected'],
+            'completed' => [], // cannot change
+            'rejected'  => [], // cannot change
+        ];
+
+        if (! in_array($new, $allowedTransitions[$current])) {
+            return back()->with('error', "Cannot change order from {$current} to {$new}.");
         }
 
-        $order->status           = $request->status;
+        if ($new === 'shipping' && ! $request->delivery_service) {
+            return back()->with('error', 'Delivery service is required for shipping.');
+        }
+
+        $order->status           = $new;
         $order->delivery_service = $request->delivery_service;
         $order->save();
 
-        return back()->with('success', 'Order status updated successfully!');
+        return back()->with('success', "Order status updated to {$new}!");
     }
-    public function edit(Order $order)
-{
-    $products = Product::all(); // all products to show in form
-    $orderItems = $order->items->keyBy('product_id'); // existing order items keyed by product_id
-    return view('orders.edit', compact('order', 'products', 'orderItems'));
-}
-
-public function update(Request $request, Order $order)
-{
-    $request->validate([
-        'products' => 'required|array',
-    ]);
-
-    $total = 0;
-
-    // Remove existing items
-    $order->items()->delete();
-
-    foreach ($request->products as $productId => $quantity) {
-        if($quantity <= 0) continue;
-
-        $product = Product::find($productId);
-        if (!$product) continue;
-
-        $subtotal = $product->price * $quantity;
-
-        $order->items()->create([
-            'product_id' => $product->id,
-            'quantity'   => $quantity,
-            'price'      => $product->price,
-            'subtotal'   => $subtotal,
-        ]);
-
-        $total += $subtotal;
-
-        // optionally update stock if needed
-    }
-
-    $order->total_amount = $total;
-    $order->save();
-
-    return redirect('/orders')->with('success', 'Order updated successfully!');
-}
 }

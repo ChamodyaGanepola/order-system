@@ -499,12 +499,15 @@ textarea {
     </div>
 
     <ul class="nav-menu">
+         <li><a href="/" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li><a href="/customers" class="nav-link"><i class="fas fa-users"></i> Customers</a></li>
         <li><a href="/products" class="nav-link"><i class="fas fa-box"></i> Products</a></li>
         <li><a href="/orders" class="nav-link"><i class="fas fa-boxes"></i> Orders</a></li>
         <li><a href="/orders/pending" class="nav-link"><i class="fas fa-hourglass-half"></i> Pending</a></li>
         <li><a href="/orders/shipping" class="nav-link"><i class="fas fa-truck"></i> Shipping</a></li>
-        <li><a href="/orders/rejected" class="nav-link"><i class="fas fa-times-circle"></i> Rejected</a></li>
+                <li><a href="/orders/completed" class="nav-link"><i class="fas fa-check-circle"></i> Completed</a></li>
+                <li><a href="/orders/rejected" class="nav-link"><i class="fas fa-times-circle"></i> Rejected</a></li>
+
     </ul>
 </div>
 

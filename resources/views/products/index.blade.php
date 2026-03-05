@@ -31,6 +31,8 @@
     <table class="table table-striped">
         <thead>
             <tr>
+                <th>Code</th>
+<th>Specs</th>
                 <th>Name</th>
                 <th>Price</th>
                 <th>Stock</th>
@@ -40,6 +42,8 @@
         <tbody>
             @foreach($products as $product)
             <tr>
+                <td>{{ $product->product_code }}</td>
+<td>{{ $product->other ? implode(',', $product->other) : '' }}</td>
                 <td>{{ $product->name }}</td>
                 <td>${{ number_format($product->price, 2) }}</td>
                 <td>{{ $product->stock }}</td>
