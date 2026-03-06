@@ -16,10 +16,12 @@
 
         <h3><i class="fas fa-box"></i> Order Items</h3>
 
-        <table id="order-items-table">
+        <table id="order-items-table" class="table table-striped">
             <thead>
                 <tr>
                     <th>Product</th>
+                    <th>Code</th>
+                    <th>Variant</th>
                     <th>Price</th>
                     <th>Quantity</th>
                     <th>Subtotal</th>
@@ -29,8 +31,27 @@
             <tbody>
                 @if(isset($order))
                     @foreach($order->items as $item)
+                        @php
+                            $product = $item->product;
+                            $variant = $product->other;
+
+                            if (is_string($variant)) {
+                                $decoded = json_decode($variant, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                    $variant = implode(', ', $decoded);
+                                }
+                            } elseif (is_array($variant)) {
+                                $variant = implode(', ', $variant);
+                            }
+
+                            if (empty($variant)) {
+                                $variant = 'N/A';
+                            }
+                        @endphp
                         <tr data-product-id="{{ $item->product_id }}">
-                            <td>{{ $item->product->name }}</td>
+                            <td>{{ $product->name }}</td>
+                            <td>{{ $product->product_code }}</td>
+                            <td>{{ $variant }}</td>
                             <td>${{ number_format($item->price,2) }}</td>
                             <td>
                                 <input type="number" name="products[{{ $item->product_id }}]" value="{{ $item->quantity }}" min="1">
@@ -45,16 +66,40 @@
 
         <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
             <select id="add-product-select">
-                <option value="">-- Select Product --</option>
-                @foreach(\App\Models\Product::all() as $product)
-                    <option value="{{ $product->id }}" data-price="{{ $product->price }}" data-stock="{{ $product->stock }}">
-                        {{ $product->name }} (${{ number_format($product->price,2) }}) - Stock: {{ $product->stock }}
-                    </option>
-                @endforeach
-            </select>
+    <option value="">-- Select Product --</option>
+    @foreach(\App\Models\Product::all() as $product)
+        @php
+            $variant = $product->other;
+
+            // Normalize variant (string / JSON / array)
+            if (is_string($variant)) {
+                $decoded = json_decode($variant, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $variant = implode(', ', $decoded);
+                }
+            } elseif (is_array($variant)) {
+                $variant = implode(', ', $variant);
+            }
+            if (empty($variant)) $variant = 'N/A';
+
+            $disabled = $product->stock <= 0 ? 'disabled' : '';
+        @endphp
+        <option
+            value="{{ $product->id }}"
+            data-price="{{ $product->price }}"
+            data-stock="{{ $product->stock }}"
+            data-code="{{ $product->product_code }}"
+            data-variant="{{ $variant }}"
+            {{ $disabled }}
+        >
+            {{ $product->name }} (Code: {{ $product->product_code }}, Variant: {{ $variant }})
+            - ${{ number_format($product->price,2) }}, Stock: {{ $product->stock }}
+            @if($product->stock <= 0) - Out of Stock @endif
+        </option>
+    @endforeach
+</select>
 
             <input type="number" id="add-product-quantity" placeholder="Quantity" min="1" style="width: 100px;">
-
             <button type="button" class="btn btn-success btn-sm" id="add-product-btn">Add Product</button>
         </div>
 
@@ -74,9 +119,11 @@ document.getElementById('add-product-btn').addEventListener('click', function() 
     const select = document.getElementById('add-product-select');
     const quantityInput = document.getElementById('add-product-quantity');
     const productId = select.value;
-    const productName = select.options[select.selectedIndex].text;
+    const productName = select.options[select.selectedIndex].text.split(' (')[0];
     const price = parseFloat(select.options[select.selectedIndex].dataset.price);
     const stock = parseInt(select.options[select.selectedIndex].dataset.stock);
+    const productCode = select.options[select.selectedIndex].dataset.code;
+    const variant = select.options[select.selectedIndex].dataset.variant;
     const quantity = parseInt(quantityInput.value);
 
     if (!productId) { alert('Please select a product.'); return; }
@@ -94,6 +141,8 @@ document.getElementById('add-product-btn').addEventListener('click', function() 
     row.setAttribute('data-product-id', productId);
     row.innerHTML = `
         <td>${productName}</td>
+        <td>${productCode}</td>
+        <td>${variant}</td>
         <td>$${price.toFixed(2)}</td>
         <td><input type="number" name="products[${productId}]" value="${quantity}" min="1"></td>
         <td>$${(price*quantity).toFixed(2)}</td>

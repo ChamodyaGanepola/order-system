@@ -28,10 +28,13 @@
             <tbody>
                 @foreach($order->items as $item)
                 <tr data-product-id="{{ $item->product_id }}">
-                    <td>{{ $item->product->name }}</td>
+                    <td>{{ $item->product->name }} ({{ $item->product->product_code }}) - Variant: {{ $item->product->other ?? 'N/A' }}</td>
                     <td>${{ number_format($item->price, 2) }}</td>
                     <td>
-                        <input type="number" name="products[{{ $item->product_id }}]" value="{{ $item->quantity }}" min="1" max="{{ $item->product->stock }}">
+                        <input type="number" name="products[{{ $item->product_id }}]"
+                               value="{{ $item->quantity }}"
+                               min="1"
+                               max="{{ $item->product->stock > 0 ? $item->product->stock : $item->quantity }}">
                     </td>
                     <td>${{ number_format($item->subtotal, 2) }}</td>
                     <td>
@@ -46,15 +49,21 @@
             <select id="add-product-select">
                 <option value="">-- Select Product to Add --</option>
                 @foreach(App\Models\Product::all() as $product)
-                    <option value="{{ $product->id }}" data-price="{{ $product->price }}">{{ $product->name }} (${{ number_format($product->price, 2) }})</option>
+                    <option value="{{ $product->id }}"
+                            data-price="{{ $product->price }}"
+                            data-stock="{{ $product->stock }}"
+                            {{ $product->stock <= 0 ? 'disabled' : '' }}>
+                        {{ $product->name }} ({{ $product->product_code }}) - Variant: {{ $product->other ?? 'N/A' }} (${{ number_format($product->price,2) }}) - Stock: {{ $product->stock }}
+                    </option>
                 @endforeach
             </select>
+            <input type="number" id="add-product-quantity" placeholder="Quantity" min="1" style="width: 100px;">
             <button type="button" class="btn btn-success btn-sm" id="add-product-btn">Add Product</button>
         </div>
 
         <div class="btn-group" style="margin-top: 15px;">
             <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i> Update Order</button>
-            <a href="/orders" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Cancel</a>
+            <a href="{{ route('orders.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Cancel</a>
         </div>
     </form>
 </div>
@@ -62,14 +71,19 @@
 <script>
 document.getElementById('add-product-btn').addEventListener('click', function() {
     const select = document.getElementById('add-product-select');
+    const quantityInput = document.getElementById('add-product-quantity');
     const productId = select.value;
     const productName = select.options[select.selectedIndex].text;
-    const price = select.options[select.selectedIndex].dataset.price;
+    const price = parseFloat(select.options[select.selectedIndex].dataset.price);
+    const stock = parseInt(select.options[select.selectedIndex].dataset.stock);
+    const quantity = parseInt(quantityInput.value);
 
-    if (!productId) return;
+    if (!productId) { alert('Please select a product'); return; }
+    if (!quantity || quantity < 1) { alert('Enter valid quantity'); return; }
+    if (quantity > stock) { alert('Quantity exceeds stock'); return; }
 
-    // Prevent adding duplicate products
-    if(document.querySelector('#order-items-table tbody tr[data-product-id="'+productId+'"]')) {
+    // Prevent duplicate rows
+    if(document.querySelector('#order-items-table tbody tr[data-product-id="'+productId+'"]')){
         alert('Product already added!');
         return;
     }
@@ -79,15 +93,18 @@ document.getElementById('add-product-btn').addEventListener('click', function() 
     row.setAttribute('data-product-id', productId);
     row.innerHTML = `
         <td>${productName}</td>
-        <td>$${parseFloat(price).toFixed(2)}</td>
-        <td><input type="number" name="products[${productId}]" value="1" min="1"></td>
-        <td>$${parseFloat(price).toFixed(2)}</td>
+        <td>$${price.toFixed(2)}</td>
+        <td><input type="number" name="products[${productId}]" value="${quantity}" min="1" max="${stock}"></td>
+        <td>$${(price*quantity).toFixed(2)}</td>
         <td><button type="button" class="btn btn-danger btn-sm remove-item">Remove</button></td>
     `;
     tbody.appendChild(row);
+
+    select.value = '';
+    quantityInput.value = '';
 });
 
-// Remove product row
+// Remove row
 document.addEventListener('click', function(e){
     if(e.target.classList.contains('remove-item')){
         e.target.closest('tr').remove();

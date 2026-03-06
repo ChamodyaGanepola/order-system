@@ -2,37 +2,38 @@
 
 @section('content')
 <div class="content-box" style="max-width: 500px; margin: 0 auto;">
-    <h3>✏️ Edit Product</h3>
+    <h3>✏️ Edit Product Variant</h3>
     <form action="{{ route('products.update', $product) }}" method="POST">
         @csrf
         @method('PUT')
-        <div class="form-group">
-    <label>Product Code</label>
-    <input type="text" name="product_code" class="form-control"
-        value="{{ old('product_code',$product->product_code) }}" required>
-</div>
 
-<div class="form-group">
-    <label>Specifications</label>
-    <input type="text" name="other" class="form-control"
-        value="{{ old('other', implode(',', $product->other ?? [])) }}">
-</div>
         <div class="form-group">
-            <label for="name">📝 Name</label>
-            <input type="text" name="name" id="name" class="form-control" required value="{{ old('name', $product->name) }}">
-            @error('name')<div class="text-danger">{{ $message }}</div>@enderror
+            <label>Product Code</label>
+            <input type="text" name="product_code" class="form-control" value="{{ $product->product_code }}" required>
         </div>
+
         <div class="form-group">
-            <label for="price">💲 Price</label>
-            <input type="number" name="price" id="price" class="form-control" step="0.01" min="0" required value="{{ old('price', $product->price) }}">
-            @error('price')<div class="text-danger">{{ $message }}</div>@enderror
+            <label>Variant / Other</label>
+            <input type="text" name="other" class="form-control" value="{{ $product->other }}">
+            @error('other') <div class="text-danger">{{ $message }}</div> @enderror
         </div>
+
         <div class="form-group">
-            <label for="stock">📦 Stock</label>
-            <input type="number" name="stock" id="stock" class="form-control" min="0" required value="{{ old('stock', $product->stock) }}">
-            @error('stock')<div class="text-danger">{{ $message }}</div>@enderror
+            <label>Name</label>
+            <input type="text" name="name" class="form-control" value="{{ $product->name }}" required>
         </div>
-        <button type="submit" class="btn btn-primary">Update Product</button>
+
+        <div class="form-group">
+            <label>Price</label>
+            <input type="number" name="price" class="form-control" step="0.01" min="0" value="{{ $product->price }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>Stock</label>
+            <input type="number" name="stock" class="form-control" min="0" value="{{ $product->stock }}" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Variant</button>
         <a href="{{ route('products.index') }}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>

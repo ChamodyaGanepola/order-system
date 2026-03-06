@@ -11,64 +11,52 @@
 </div>
 
 @if(session('success'))
-    <div id="success-alert" class="alert alert-success">
-        {{ session('success') }}
-    </div>
-
+    <div id="success-alert" class="alert alert-success">{{ session('success') }}</div>
     <script>
-        setTimeout(function () {
-            let alert = document.getElementById('success-alert');
-            if (alert) {
-                alert.style.transition = "opacity 0.5s ease";
-                alert.style.opacity = "0";
-                setTimeout(() => alert.remove(), 500);
-            }
-        }, 3000);
+        setTimeout(() => document.getElementById('success-alert')?.remove(), 3000);
     </script>
 @endif
 
 @if($products->count())
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Code</th>
-<th>Specs</th>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($products as $product)
-            <tr>
-                <td>{{ $product->product_code }}</td>
-<td>{{ $product->other ? implode(',', $product->other) : '' }}</td>
-                <td>{{ $product->name }}</td>
-                <td>${{ number_format($product->price, 2) }}</td>
-                <td>{{ $product->stock }}</td>
-                <td style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
-                    <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px;">
-                        <i class="fas fa-edit fa-sm"></i> Edit
-                    </a>
-                    <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm" style="display: flex; align-items: center; gap: 4px;" onclick="return confirm('Delete this product?')">
-                            <i class="fas fa-trash fa-sm"></i> Delete
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-    <div class="d-flex justify-content-center mt-3">
-        {{ $products->links('pagination::bootstrap-5') }}
-    </div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Variant</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($products as $product)
+        <tr>
+            <td>{{ $product->product_code }}</td>
+            <td>{{ $product->other ?? 'N/A' }}</td>
+            <td>{{ $product->name }}</td>
+            <td>${{ number_format($product->price, 2) }}</td>
+            <td>{{ $product->stock }}</td>
+            <td style="display: flex; gap: 6px;">
+                <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Edit</a>
+                <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </form>
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
+
+{{ $products->links() }}
+
 @else
-    <div class="empty-state">
-        <h3>No products found.</h3>
-    </div>
+<div class="empty-state">
+    <h3>No products found.</h3>
+</div>
 @endif
 @endsection

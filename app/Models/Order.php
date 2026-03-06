@@ -10,7 +10,8 @@ class Order extends Model
     'customer_id',
     'total_amount',
     'status',
-    'delivery_service'
+    'delivery_service',
+    'tracking_number',
 ];
     public function customer()
     {

@@ -92,9 +92,70 @@
                 <i class="fas fa-dollar-sign fa-3x card-icon"></i>
             </div>
         </div>
+  <!-- Out of Stock Products -->
+        <div class="dashboard-card bg-danger">
+            <div class="card-content">
+                <div>
+                    <h6><i class="fas fa-box-open"></i> Out of Stock Products</h6>
+                    <h2>{{ count($outOfStockSummary) }}</h2>
+                </div>
+                <i class="fas fa-box-open fa-3x card-icon"></i>
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="btn btn-light btn-sm" onclick="toggleOutOfStockTable()">View Details</button>
+            </div>
+        </div>
 
     </div>
+
+    <!-- Out of Stock Table (Initially Hidden) -->
+    <div id="out-of-stock-table" style="display:none; margin-top: 30px;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-box-open"></i> Out of Stock Product Details</h5>
+            </div>
+            <div class="card-body p-0">
+                @if(count($outOfStockSummary) > 0)
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product Code</th>
+                            <th>Variant</th>
+                            <th>Missing Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($outOfStockSummary as $key => $missingQty)
+                        @php
+                            $parts = explode(' - ', $key);
+                            $code = $parts[0] ?? $key;
+                            $variant = $parts[1] ?? 'N/A';
+                        @endphp
+                        <tr>
+                            <td>{{ $code }}</td>
+                            <td>{{ $variant }}</td>
+                            <td><span class="badge bg-danger">{{ $missingQty }}</span></td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @else
+                <div class="p-3 text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <p>All products are in stock!</p>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
 </div>
+<script>
+function toggleOutOfStockTable() {
+    const table = document.getElementById('out-of-stock-table');
+    table.style.display = table.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
 
 <style>
 .dashboard-container {
@@ -103,6 +164,10 @@
     padding: 0 15px;
 }
 
+.dashboard-card.bg-danger:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+}
 .dashboard-title {
     font-size: 28px;
     font-weight: 700;

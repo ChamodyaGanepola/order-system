@@ -17,54 +17,78 @@ class ProductController extends Controller
     {
         return view('products.create');
     }
-    
 
- public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'product_code' => 'required|string|max:100|unique:products,product_code',
-        'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
-        'other' => 'nullable|string'
-    ]);
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'product_code' => 'required|string|max:100',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'other' => 'nullable|string'
+        ]);
 
-    Product::create([
-        'name' => $request->name,
-        'product_code' => $request->product_code,
-        'price' => $request->price,
-        'stock' => $request->stock,
-        'other' => $request->other ? explode(',', $request->other) : null
-    ]);
+        $variant = $request->other ?? 'N/A';
 
-    return redirect()->route('products.index')->with('success', 'Product added successfully!');
-}
+        $exists = Product::where('product_code', $request->product_code)
+                         ->where('other', $variant)
+                         ->exists();
+
+        if ($exists) {
+            return back()->withErrors([
+                'other' => "This variant '{$variant}' for product code {$request->product_code} already exists."
+            ]);
+        }
+
+        Product::create([
+            'name' => $request->name,
+            'product_code' => $request->product_code,
+            'price' => $request->price,
+            'stock' => $request->stock,
+            'other' => $variant
+        ]);
+
+        return redirect()->route('products.index')->with('success', 'Product added successfully!');
+    }
 
     public function edit(Product $product)
     {
         return view('products.edit', compact('product'));
     }
 
-  public function update(Request $request, Product $product)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'product_code' => 'required|string|max:100|unique:products,product_code,' . $product->id,
-        'price' => 'required|numeric|min:0',
-        'stock' => 'required|integer|min:0',
-        'other' => 'nullable|string'
-    ]);
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'product_code' => 'required|string|max:100',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'other' => 'nullable|string'
+        ]);
 
-    $product->update([
-        'name' => $request->name,
-        'product_code' => $request->product_code,
-        'price' => $request->price,
-        'stock' => $request->stock,
-        'other' => $request->other ? explode(',', $request->other) : null
-    ]);
+        $variant = $request->other ?? 'N/A';
 
-    return redirect()->route('products.index')->with('success', 'Product updated successfully!');
-}
+        $exists = Product::where('product_code', $request->product_code)
+                         ->where('other', $variant)
+                         ->where('id', '!=', $product->id)
+                         ->exists();
+
+        if ($exists) {
+            return back()->withErrors([
+                'other' => "This variant '{$variant}' for product code {$request->product_code} already exists."
+            ]);
+        }
+
+        $product->update([
+            'name' => $request->name,
+            'product_code' => $request->product_code,
+            'price' => $request->price,
+            'stock' => $request->stock,
+            'other' => $variant
+        ]);
+
+        return redirect()->route('products.index')->with('success', 'Product updated successfully!');
+    }
 
     public function destroy(Product $product)
     {

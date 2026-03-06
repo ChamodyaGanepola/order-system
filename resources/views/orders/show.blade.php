@@ -49,12 +49,23 @@
                     <tr>
                         <td>{{ $item->product->name }}</td>
                         <td>
-                            @if(!empty($item->product->other) && is_array($item->product->other))
-                                <ul class="mb-0">
-                                    @foreach($item->product->other as $key => $value)
-                                        <li><strong>{{ ucfirst($key) }}:</strong> {{ $value }}</li>
-                                    @endforeach
-                                </ul>
+                            @php
+                                $specs = $item->product->other;
+                                if (is_string($specs) && $decoded = json_decode($specs, true)) {
+                                    $specs = $decoded;
+                                }
+                            @endphp
+
+                            @if(!empty($specs))
+                                @if(is_array($specs))
+                                    <ul class="mb-0">
+                                        @foreach($specs as $key => $value)
+                                            <li><strong>{{ ucfirst($key) }}:</strong> {{ $value }}</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    {{ $specs }}
+                                @endif
                             @else
                                 N/A
                             @endif
@@ -74,20 +85,36 @@
     </div>
 
     <!-- Order Status -->
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mb-4">
         <div class="card-body d-flex justify-content-between align-items-center">
             <span><strong>Status:</strong></span>
-            @if($order->status === 'pending')
-                <span class="badge bg-warning text-dark">Pending</span>
-            @elseif($order->status === 'shipping')
-                <span class="badge bg-info text-dark">Shipping</span>
-            @elseif($order->status === 'rejected')
-                <span class="badge bg-danger">Rejected</span>
-            @else
-                <span class="badge bg-secondary">{{ ucfirst($order->status) }}</span>
-            @endif
+            @php
+                $statusColors = [
+                    'pending'       => 'warning',
+                    'shipping'      => 'info',
+                    'completed'     => 'success',
+                    'rejected'      => 'danger',
+                    'out_of_stock'  => 'secondary'
+                ];
+            @endphp
+            <span class="badge bg-{{ $statusColors[$order->status] ?? 'dark' }}">
+                {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+            </span>
         </div>
     </div>
+
+    <!-- Shipping Details (if shipping) -->
+    @if($order->status === 'shipping')
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <i class="fas fa-truck"></i> Shipping Details
+        </div>
+        <div class="card-body">
+            <p><strong>Delivery Service:</strong> {{ $order->delivery_service ?? 'N/A' }}</p>
+            <p><strong>Tracking Number:</strong> {{ $order->tracking_number ?? 'N/A' }}</p>
+        </div>
+    </div>
+    @endif
 
 </div>
 @endsection

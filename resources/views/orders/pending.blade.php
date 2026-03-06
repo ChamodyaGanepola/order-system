@@ -5,19 +5,19 @@
     <h1><i class="fas fa-hourglass-half"></i> Pending Orders</h1>
 </div>
 
-@if($orders->count() > 0)
+@if($orders->total() > 0)
+<!--
 <form method="GET" style="margin-bottom: 10px;">
     <label for="per_page">Show:</label>
     <select name="per_page" id="per_page" onchange="this.form.submit()">
-        <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
-        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
-        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+        @foreach([5, 10, 25, 50] as $size)
+            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>{{ $size }}</option>
+        @endforeach
     </select>
 </form>
+-->
 
-
-<table>
+<table class="table table-striped">
     <thead>
         <tr>
             <th><i class="fas fa-hashtag"></i> Order ID</th>
@@ -41,9 +41,123 @@
         @endforeach
     </tbody>
 </table>
-   <div class="d-flex justify-content-center mt-3">
-    {{ $orders->appends(request()->query())->links('pagination::bootstrap-5') }}
+
+<!-- Custom Numeric Pagination -->
+@if($orders->total() > 0)
+<div class="pagination-container" style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 20px;">
+
+    <!-- Numeric Pagination Links -->
+    <div class="pagination-links">
+        @if ($orders->hasPages())
+            <ul class="pagination">
+                {{-- Previous --}}
+                @if ($orders->onFirstPage())
+                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                @else
+                    <li class="page-item"><a class="page-link" href="{{ $orders->previousPageUrl() }}">&laquo;</a></li>
+                @endif
+
+                {{-- Page Numbers --}}
+                @foreach(range(1, $orders->lastPage()) as $page)
+                    @if($page == $orders->currentPage())
+                        <li class="page-item active"><span class="page-link">{{ $page }}</span></li>
+                    @else
+                        <li class="page-item"><a class="page-link" href="{{ $orders->url($page) }}">{{ $page }}</a></li>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($orders->hasMorePages())
+                    <li class="page-item"><a class="page-link" href="{{ $orders->nextPageUrl() }}">&raquo;</a></li>
+                @else
+                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                @endif
+            </ul>
+        @endif
+    </div>
+
+    <!-- Summary -->
+    <div class="pagination-summary" style="font-size: 14px; color: #555;">
+        Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} orders
+    </div>
 </div>
+@endif
+<style>
+.pagination-links .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pagination-links .page-item .page-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    transition: all 0.2s;
+}
+
+.pagination-links .page-item.active .page-link {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.pagination-links .page-item.disabled .page-link {
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+}
+</style>
+
+<style>
+.pagination-links .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pagination-links .page-item .page-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    transition: all 0.2s;
+}
+
+.pagination-links .page-item.active .page-link {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.pagination-links .page-item.disabled .page-link {
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+}
+</style>
+
 @else
 <div class="empty-state">
     <i class="fas fa-hourglass-half"></i>

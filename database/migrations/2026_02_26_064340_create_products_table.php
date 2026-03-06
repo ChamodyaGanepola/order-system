@@ -6,23 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->decimal('price', 10, 2);
-            $table->integer('stock');
+            $table->string('product_code');       // main product code
+            $table->string('other')->nullable();  // variant (chain, bracelet, etc.)
+            $table->string('name');               // product name
+            $table->decimal('price', 10, 2);     // price
+            $table->integer('stock');             // stock
             $table->timestamps();
+
+            // make combination of product_code + variant unique
+            $table->unique(['product_code', 'other'], 'unique_product_variant');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('products');

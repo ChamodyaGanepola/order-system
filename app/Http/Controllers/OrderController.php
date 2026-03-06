@@ -21,7 +21,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'products'    => 'required|array',
+            'products'    => 'required|array', // array of ['product_code' => ..., 'other' => [...], 'quantity' => ...]
         ]);
 
         $order = Order::create([
@@ -30,58 +30,162 @@ class OrderController extends Controller
             'status'       => 'pending',
         ]);
 
-        $total = 0;
+        $total              = 0;
+        $outOfStockProducts = [];
 
-        foreach ($request->products as $productId => $quantity) {
-            if ($quantity <= 0) {
-                continue;
-            }
-            // Skip if quantity is zero
+       foreach ($request->products as $itemData) {
+    $quantity    = isset($itemData['quantity']) ? (int) $itemData['quantity'] : 1;
+    $productCode = $itemData['product_code'] ?? null;
+    $variant     = $itemData['other'] ?? 'N/A'; // exact variant
 
-            $product = Product::find($productId);
+    if (!$productCode || $quantity <= 0) continue;
 
-            if (! $product) {
-                continue;
-            }
-            // Skip if product not found
+    // Find the product with that variant
+    $product = Product::where('product_code', $productCode)
+                      ->where('other', $variant)
+                      ->first();
 
-            $subtotal = $product->price * $quantity;
+    if (!$product) continue;
 
-            OrderItem::create([
-                'order_id'   => $order->id,
-                'product_id' => $product->id,
-                'quantity'   => $quantity,
-                'price'      => $product->price,
-                'subtotal'   => $subtotal,
-            ]);
+    if ($product->stock < $quantity) {
+        $outOfStockProducts[] = $product->name . " ($variant) (Needed: $quantity, Available: $product->stock)";
+        continue;
+    }
 
-            $total += $subtotal;
+    $subtotal = $product->price * $quantity;
 
-            // Optionally, reduce product stock
-            $product->stock -= $quantity;
-            $product->save();
-        }
+    OrderItem::create([
+        'order_id'   => $order->id,
+        'product_id' => $product->id, // links to the variant
+        'quantity'   => $quantity,
+        'price'      => $product->price,
+        'subtotal'   => $subtotal,
+    ]);
+
+    $product->stock -= $quantity;
+    $product->save();
+
+    $total += $subtotal;
+}
 
         $order->total_amount = $total;
+
+        // If any stock missing
+        if (count($outOfStockProducts) > 0) {
+            $order->status = 'out_of_stock';
+            $order->save();
+
+            $productList = implode(", ", $outOfStockProducts);
+
+            return redirect('/orders/outofstock')
+                ->with('error', "Stock not enough for: $productList");
+        }
+
         $order->save();
 
         return redirect('/orders/pending')->with('success', 'Order created successfully!');
     }
+    public function edit(Order $order)
+{
+    $products = Product::all(); // all products for dropdown
+    $order->load('customer', 'items.product'); // eager load
+    return view('orders.edit', compact('order', 'products'));
+}
+
+public function update(Request $request, Order $order)
+{
+    $request->validate([
+        'products' => 'required|array',
+    ]);
+
+    $existingItems = $order->items()->get()->keyBy('product_id'); // existing items
+    $total = 0;
+
+    $order->items()->delete(); // remove old items
+
+    foreach ($request->products as $productId => $quantity) {
+        $product = Product::find($productId);
+        if (!$product) continue;
+
+        // For already existing order items, allow editing even if stock=0
+        $oldQuantity = $existingItems->has($productId) ? $existingItems[$productId]->quantity : 0;
+
+        // Only check stock if new product or increasing quantity
+        if (!$existingItems->has($productId) && $quantity > $product->stock) {
+            return back()->with('error', "Cannot add {$product->name}. Stock not enough.");
+        }
+
+        $subtotal = $product->price * $quantity;
+
+        $order->items()->create([
+            'product_id' => $product->id,
+            'quantity'   => $quantity,
+            'price'      => $product->price,
+            'subtotal'   => $subtotal,
+        ]);
+
+        // Reduce stock only for newly added quantity
+        if (!$existingItems->has($productId)) {
+            $product->stock -= $quantity;
+            $product->save();
+        }
+
+        $total += $subtotal;
+    }
+
+    $order->total_amount = $total;
+    $order->save();
+
+    return redirect()->route('orders.index')->with('success', 'Order updated successfully!');
+}
+    // In your OrderController@outOfStock
+    public function outOfStock()
+{
+    $orders = Order::where('status', 'out_of_stock')
+        ->with('customer', 'items.product')
+        ->paginate(10);
+
+    $outOfStockSummary = [];
+
+    foreach ($orders as $order) {
+        foreach ($order->items as $item) {
+            $product = $item->product;
+            if (!$product) continue;
+
+            // Treat 'other' as string, default to 'N/A'
+            $variant = $product->other ?: 'N/A';
+
+            $key = $product->product_code . ' - ' . $variant;
+
+            if (!isset($outOfStockSummary[$key])) {
+                $outOfStockSummary[$key] = 0;
+            }
+
+            $outOfStockSummary[$key] += $item->quantity;
+        }
+    }
+
+    return view('orders.outofstock', compact('orders', 'outOfStockSummary'));
+}
 
     // Optional: show all pending orders
     public function pending(Request $request)
     {
-        $perPage = $request->input('per_page', 10); // default 10 per page
+        $perPage = $request->input('per_page', 10);
         $orders  = Order::where('status', 'pending')
             ->with('customer')
             ->paginate($perPage);
-        return view('orders.pending', compact('orders'));
+
+        return view('orders.pending', compact('orders', 'perPage'));
     }
     // Show all orders
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with('customer')->get();
-        return view('orders.index', compact('orders'));
+        $perPage = $request->input('per_page', 10); // use the value from request or default 10
+        $orders  = Order::with('customer')
+            ->paginate($perPage);
+
+        return view('orders.index', compact('orders', 'perPage'));
     }
 
     // Show shipping orders
@@ -108,37 +212,37 @@ class OrderController extends Controller
         $orders = Order::where('status', 'completed')->with('customer')->get();
         return view('orders.completed', compact('orders'));
     }
+public function updateStatus(Request $request, Order $order)
+{
+    $request->validate([
+        'status'           => 'required|in:pending,shipping,rejected,completed',
+        'delivery_service' => 'nullable|string|max:255',
+        'tracking_number'  => 'nullable|string|max:255', // keep this if you want tracking
+    ]);
 
-    public function updateStatus(Request $request, Order $order)
-    {
-        $request->validate([
-            'status'           => 'required|in:pending,shipping,rejected,completed',
-            'delivery_service' => 'nullable|string|max:255',
-        ]);
+    $current = $order->status;
+    $new     = $request->status;
 
-        $current = $order->status;
-        $new     = $request->status;
+    $allowedTransitions = [
+        'pending'   => ['shipping', 'rejected'],
+        'shipping'  => ['completed', 'rejected'],
+        'completed' => [],
+        'rejected'  => [],
+    ];
 
-        // Allowed transitions
-        $allowedTransitions = [
-            'pending'   => ['shipping', 'rejected'],
-            'shipping'  => ['completed', 'rejected'],
-            'completed' => [], // cannot change
-            'rejected'  => [], // cannot change
-        ];
-
-        if (! in_array($new, $allowedTransitions[$current])) {
-            return back()->with('error', "Cannot change order from {$current} to {$new}.");
-        }
-
-        if ($new === 'shipping' && ! $request->delivery_service) {
-            return back()->with('error', 'Delivery service is required for shipping.');
-        }
-
-        $order->status           = $new;
-        $order->delivery_service = $request->delivery_service;
-        $order->save();
-
-        return back()->with('success', "Order status updated to {$new}!");
+    if (! in_array($new, $allowedTransitions[$current])) {
+        return back()->with('error', "Cannot change order from {$current} to {$new}.");
     }
+
+    if ($new === 'shipping' && ! $request->delivery_service) {
+        return back()->with('error', 'Delivery service is required for shipping.');
+    }
+
+    $order->status           = $new;
+    $order->delivery_service = $request->delivery_service;
+    $order->tracking_number  = $request->tracking_number; // optional
+    $order->save();
+
+    return back()->with('success', "Order status updated to {$new}!");
+}
 }

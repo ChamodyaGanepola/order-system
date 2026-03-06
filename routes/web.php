@@ -18,13 +18,14 @@ Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name
 Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
 // Orders
-Route::get('/orders', [OrderController::class, 'index']);
+Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('/orders/create/{customer}', [OrderController::class, 'create']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/pending', [OrderController::class, 'pending']);
 Route::get('/orders/completed', [OrderController::class, 'completed']);
 Route::get('/orders/shipping', [OrderController::class, 'shipping']);
 Route::get('/orders/rejected', [OrderController::class, 'rejected']);
+Route::get('/orders/outofstock', [OrderController::class,'outOfStock']);
 
 // Edit & Update
 Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');

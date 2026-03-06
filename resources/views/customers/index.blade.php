@@ -75,61 +75,64 @@
             @endforeach
         </tbody>
     </table>
+<div class="pagination-container" style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+    <!-- Custom Pagination Links -->
+    <div class="pagination-links">
+       {{ $customers->links('vendor.pagination.custom') }}
+    </div>
 
-    <div class="pagination-wrapper">
-
-    {{ $customers->links('vendor.pagination.bootstrap-5') }}
-
-    <span style="white-space: nowrap;">
-        Showing {{ $customers->firstItem() }}
-        to {{ $customers->lastItem() }}
-        of {{ $customers->total() }} results
-    </span>
-
+    <!-- Summary -->
+    <div class="pagination-summary" style="font-size: 14px; color: #555;">
+        Showing {{ $customers->firstItem() }} to {{ $customers->lastItem() }} of {{ $customers->total() }} results
+    </div>
 </div>
+
 <style>
-@media (max-width: 900px) {
-    .content-toolbar, .customer-search-form {
-        flex-direction: column !important;
-        align-items: stretch !important;
-    }
-    .content-toolbar > *, .customer-search-form > * {
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-    .content-toolbar {
-        gap: 12px !important;
-    }
-    .table thead th, .table td {
-        font-size: 13px !important;
-        padding: 8px !important;
-    }
-    .table td > * {
-        font-size: 13px !important;
-    }
-    .content-box {
-        padding: 16px !important;
-    }
-    .pagination-wrapper {
+/* Hide default nav wrapper completely */
+.pagination-links nav {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Flex display for page numbers */
+.pagination-links .pagination {
     display: flex;
-    align-items: center;
+    gap: 10px; /* horizontal spacing */
     justify-content: center;
-    gap: 15px;
-    margin-top: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
-.pagination-wrapper nav {
-    display: inline-flex !important;
-    margin: 0 !important;
+/* Individual page link styling */
+.pagination-links .page-item .page-link {
+    min-width: 36px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.2s;
 }
 
-.pagination {
-    margin: 0 !important;
+.pagination-links .page-item.active .page-link {
+    background-color: #2563eb;
+    color: white;
+    border-color: #2563eb;
 }
 
-.pagination li {
-    white-space: nowrap;
+.pagination-links .page-item.disabled .page-link {
+    color: #b0b0b0;
+    cursor: not-allowed;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pagination-links .pagination {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
 }
 </style>
 @endif
