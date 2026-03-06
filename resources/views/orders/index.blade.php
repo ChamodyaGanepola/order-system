@@ -273,9 +273,7 @@ function submitShipping() {
     <i class="fas fa-boxes"></i>
     <h3>No Orders Found</h3>
     <p>Create your first order by selecting a customer</p>
-    <a href="/customers/create" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create Order
-    </a>
+   
 </div>
 @endif
 @endsection

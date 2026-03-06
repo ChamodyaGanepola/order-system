@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-
+@if($customers->total() > 0)
 <div class="content-toolbar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 20px;">
     <form method="GET" class="customer-search-form" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name..." class="form-control">
@@ -24,7 +24,18 @@
         <i class="fas fa-user"></i> <i class="fas fa-plus"></i> Add Customer
     </a>
 </div>
+@else
+<div class="content-box" style="text-align:center; padding:40px;">
+    <i class="fas fa-users" style="font-size:40px; color:#9ca3af;"></i>
+    <h3 style="margin-top:10px;">No Customers Found</h3>
+    <p style="color:#6b7280;">Add a customer or import from Excel to get started.</p>
 
+    <a href="/customers/create" class="btn btn-primary" style="margin-top:10px;">
+        <i class="fas fa-user-plus"></i> Add Customer
+    </a>
+</div>
+
+@endif
 <div class="content-box" style="margin-bottom: 30px;">
     <h3 style="display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 700;">
         <i class="fas fa-upload"></i> Import Customers from Excel
