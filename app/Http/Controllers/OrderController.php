@@ -6,7 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
-
+use App\Helpers\TransexHelper;
 class OrderController extends Controller
 {
     // Show form to create order for a customer
@@ -212,37 +212,32 @@ public function update(Request $request, Order $order)
         $orders = Order::where('status', 'completed')->with('customer')->get();
         return view('orders.completed', compact('orders'));
     }
-public function updateStatus(Request $request, Order $order)
+
+public function updateStatus(Request $request, $orderId)
 {
-    $request->validate([
-        'status'           => 'required|in:pending,shipping,rejected,completed',
-        'delivery_service' => 'nullable|string|max:255',
-        'tracking_number'  => 'nullable|string|max:255', // keep this if you want tracking
-    ]);
+    $order = Order::findOrFail($orderId);
+    $status = $request->input('status');
+    $deliveryService = $request->input('delivery_service');
+    $city = $request->input('city'); // New: captured from popup
 
-    $current = $order->status;
-    $new     = $request->status;
-
-    $allowedTransitions = [
-        'pending'   => ['shipping', 'rejected'],
-        'shipping'  => ['completed', 'rejected'],
-        'completed' => [],
-        'rejected'  => [],
-    ];
-
-    if (! in_array($new, $allowedTransitions[$current])) {
-        return back()->with('error', "Cannot change order from {$current} to {$new}.");
+    if ($status === 'shipping' && !$order->waybill_number) {
+        try {
+            $apiData = TransexHelper::createOrder($order, $deliveryService, $city);
+            
+            // Per documentation, API returns an array. Extract the waybill_id.
+            if (isset($apiData[0]['waybill_id'])) {
+                $order->waybill_number = $apiData[0]['waybill_id'];
+                $order->delivery_service = $deliveryService;
+            }
+        } catch (\Exception $e) {
+            logger()->error("Shipping API Failed: " . $e->getMessage());
+            return back()->with('error', 'Could not sync with Transexpress: ' . $e->getMessage());
+        }
     }
 
-    if ($new === 'shipping' && ! $request->delivery_service) {
-        return back()->with('error', 'Delivery service is required for shipping.');
-    }
-
-    $order->status           = $new;
-    $order->delivery_service = $request->delivery_service;
-    $order->tracking_number  = $request->tracking_number; // optional
+    $order->status = $status;
     $order->save();
 
-    return back()->with('success', "Order status updated to {$new}!");
+    return back()->with('success', 'Order status updated.');
 }
 }

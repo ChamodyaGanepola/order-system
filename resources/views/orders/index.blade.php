@@ -16,7 +16,7 @@
             <th>Customer</th>
             <th>Total Amount</th>
             <th>Status</th>
-            <th>Tracking Number</th>
+            <th>Waybill Number</th>
             <th>Actions</th>
 
         </tr>
@@ -60,9 +60,15 @@
                 </span>
             @endif
             </td>
-            <td>
-        {{ $order->tracking_number ?? '-' }} <!-- NEW -->
-    </td>
+          <td>
+@if($order->waybill_number)
+    <a href="https://portal.transexpress.lk/track/{{ $order->waybill_number }}" target="_blank">
+        {{ $order->waybill_number }}
+    </a>
+@else
+    -
+@endif
+</td>
             <td>
                 <div class="action-buttons">
                     @if(in_array($order->status, ['pending', 'shipping', 'out_of_stock']))
@@ -99,13 +105,21 @@
     <h4>Shipping Details</h4>
     <form id="shipping-form">
         <div class="form-group" style="margin-bottom:10px;">
-            <label for="delivery_service">Delivery Service</label>
-            <input type="text" id="delivery_service_input" class="form-control" placeholder="e.g., Koobiyo">
+            <label for="shipping_city">City</label>
+            <input type="text" id="shipping_city_input" class="form-control" placeholder="e.g. Colombo 03" required>
         </div>
+
         <div class="form-group" style="margin-bottom:10px;">
-            <label for="tracking_number">Tracking Number (optional)</label>
-            <input type="text" id="tracking_number_input" class="form-control" placeholder="Enter tracking number">
+            <label for="delivery_service">Delivery Service</label>
+            <select id="delivery_service_input" class="form-control">
+                <option value="">Select Delivery Service</option>
+                <option value="koombiyo">Koombiyo</option>
+                <option value="domex">Domex</option>
+                <option value="promptxpress">Prompt Xpress</option>
+                <option value="pickme">PickMe Flash</option>
+            </select>
         </div>
+
         <div style="display:flex; justify-content: flex-end; gap:10px;">
             <button type="button" class="btn btn-secondary" onclick="closeShippingCard()">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="submitShipping()">Submit</button>
@@ -161,33 +175,33 @@ function closeShippingCard() {
 
 // Submit shipping info
 function submitShipping() {
-    let deliveryService = document.getElementById("delivery_service_input").value.trim();
-    let trackingNumber = document.getElementById("tracking_number_input").value.trim();
+    let deliveryService = document.getElementById("delivery_service_input").value;
+    let city = document.getElementById("shipping_city_input").value; // Get city
 
+    if(!city) {
+        alert("Please enter a city!");
+        return;
+    }
     if(!deliveryService) {
-        alert("Delivery Service is required!");
+        alert("Please select a delivery service!");
         return;
     }
 
-    // Set hidden input value
+    // Set the values into the hidden fields of the status form
     document.getElementById("delivery_" + currentOrderId).value = deliveryService;
-
-    // Optional: if you want to store tracking number as well
-    let form = document.querySelector('form[action*="'+currentOrderId+'"]');
-    if(form.querySelector('input[name="tracking_number"]') === null) {
-        let tnInput = document.createElement("input");
-        tnInput.type = "hidden";
-        tnInput.name = "tracking_number";
-        tnInput.value = trackingNumber;
-        form.appendChild(tnInput);
-    } else {
-        form.querySelector('input[name="tracking_number"]').value = trackingNumber;
+    
+    // Create the city hidden input if it doesn't exist, then set value
+    let cityInput = document.getElementById("city_" + currentOrderId);
+    if(!cityInput) {
+        cityInput = document.createElement("input");
+        cityInput.type = "hidden";
+        cityInput.name = "city";
+        cityInput.id = "city_" + currentOrderId;
+        document.querySelector('form[action*="update-status"]').appendChild(cityInput);
     }
+    cityInput.value = city;
 
-    // Submit the form
     document.getElementById("submit_" + currentOrderId).click();
-
-    // Close modal
     closeShippingCard();
 }
 </script>
@@ -273,7 +287,7 @@ function submitShipping() {
     <i class="fas fa-boxes"></i>
     <h3>No Orders Found</h3>
     <p>Create your first order by selecting a customer</p>
-   
+
 </div>
 @endif
 @endsection

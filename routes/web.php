@@ -4,10 +4,18 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
+use App\Helpers\TransexHelper;
 
 Route::resource('products', ProductController::class)->except(['show']);
 
-
+Route::get('/test-token', function() {
+    try {
+        $token = \App\Helpers\TransexHelper::getToken();
+        dd($token); // should show your token string
+    } catch (\Exception $e) {
+        dd($e->getMessage());
+    }
+});
 // Customers
 Route::get('/customers', [CustomerController::class, 'index']);
 Route::get('/customers/create', [CustomerController::class, 'create']);
@@ -16,6 +24,8 @@ Route::post('/customers/import', [CustomerController::class, 'import'])->name('c
 Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
 Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
 Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+
+
 
 // Orders
 Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
