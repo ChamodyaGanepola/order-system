@@ -190,14 +190,16 @@ function submitShipping() {
     // Set the values into the hidden fields of the status form
     document.getElementById("delivery_" + currentOrderId).value = deliveryService;
     
-    // Create the city hidden input if it doesn't exist, then set value
+    // Create the city hidden input if it doesn't exist, then set value.
+    // Use the submit button to find the correct form (fixes multi-order bug).
+    let orderForm = document.getElementById("submit_" + currentOrderId).closest('form');
     let cityInput = document.getElementById("city_" + currentOrderId);
     if(!cityInput) {
         cityInput = document.createElement("input");
         cityInput.type = "hidden";
         cityInput.name = "city";
         cityInput.id = "city_" + currentOrderId;
-        document.querySelector('form[action*="update-status"]').appendChild(cityInput);
+        orderForm.appendChild(cityInput);
     }
     cityInput.value = city;
 

@@ -8,10 +8,15 @@ use App\Helpers\TransexHelper;
 
 Route::resource('products', ProductController::class)->except(['show']);
 
-Route::get('/test-token', function() {
+Route::get('/test-transex', function () {
     try {
-        $token = \App\Helpers\TransexHelper::getToken();
-        dd($token); // should show your token string
+        // Quick connectivity check — verify the config is loaded.
+        dd([
+            'base_url' => config('transex.base_url'),
+            'api_key'  => substr(config('transex.api_key'), 0, 4) . str_repeat('*', 20),
+            'env'      => config('transex.env'),
+            'status'   => 'Config loaded OK',
+        ]);
     } catch (\Exception $e) {
         dd($e->getMessage());
     }

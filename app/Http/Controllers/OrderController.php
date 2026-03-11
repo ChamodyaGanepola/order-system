@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Helpers\TransexHelper;
 class OrderController extends Controller
 {
@@ -218,20 +219,47 @@ public function updateStatus(Request $request, $orderId)
     $order = Order::findOrFail($orderId);
     $status = $request->input('status');
     $deliveryService = $request->input('delivery_service');
-    $city = $request->input('city'); // New: captured from popup
+    $city = $request->input('city');
 
     if ($status === 'shipping' && !$order->waybill_number) {
         try {
             $apiData = TransexHelper::createOrder($order, $deliveryService, $city);
-            
-            // Per documentation, API returns an array. Extract the waybill_id.
-            if (isset($apiData[0]['waybill_id'])) {
-                $order->waybill_number = $apiData[0]['waybill_id'];
+
+            // The bulk auto-without-city endpoint returns an array of objects.
+            $waybillId = $apiData[0]['waybill_id']
+                ?? $apiData['waybill_id']
+                ?? null;
+
+            if ($waybillId) {
+                $order->waybill_number = $waybillId;
                 $order->delivery_service = $deliveryService;
+
+                Log::info('Transex waybill created', [
+                    'order_id'   => $order->id,
+                    'waybill_id' => $waybillId,
+                    'service'    => $deliveryService,
+                ]);
+            } else {
+                Log::error('Transex API returned unexpected structure', [
+                    'order_id' => $order->id,
+                    'response' => $apiData,
+                ]);
+
+                return back()->with(
+                    'error',
+                    'Transexpress returned an unexpected response. Check logs for details.'
+                );
             }
         } catch (\Exception $e) {
-            logger()->error("Shipping API Failed: " . $e->getMessage());
-            return back()->with('error', 'Could not sync with Transexpress: ' . $e->getMessage());
+            Log::error('Shipping API failed', [
+                'order_id' => $order->id,
+                'message'  => $e->getMessage(),
+            ]);
+
+            return back()->with(
+                'error',
+                'Could not sync with Transexpress: ' . $e->getMessage()
+            );
         }
     }
 
