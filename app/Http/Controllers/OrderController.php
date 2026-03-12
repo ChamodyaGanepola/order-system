@@ -223,11 +223,14 @@ public function updateStatus(Request $request, $orderId)
     if ($status === 'shipping' && !$order->waybill_number) {
         try {
             $apiData = TransexHelper::createOrder($order, $deliveryService, $city);
-            
-            // Per documentation, API returns an array. Extract the waybill_id.
-            if (isset($apiData[0]['waybill_id'])) {
-                $order->waybill_number = $apiData[0]['waybill_id'];
+
+            // New single endpoint returns: { "success": "...", "orders": { "waybill_id": "..." } }
+            if (isset($apiData['orders']['waybill_id'])) {
+                $order->waybill_number = $apiData['orders']['waybill_id'];
                 $order->delivery_service = $deliveryService;
+            } else {
+                logger()->warning('Transex API response missing waybill_id', $apiData);
+                return back()->with('error', 'Transexpress did not return a waybill ID. Response: ' . json_encode($apiData));
             }
         } catch (\Exception $e) {
             logger()->error("Shipping API Failed: " . $e->getMessage());
@@ -238,6 +241,11 @@ public function updateStatus(Request $request, $orderId)
     $order->status = $status;
     $order->save();
 
-    return back()->with('success', 'Order status updated.');
+    $message = 'Order status updated.';
+    if ($order->waybill_number && $status === 'shipping') {
+        $message = 'Order shipped successfully! Waybill ID: ' . $order->waybill_number;
+    }
+
+    return back()->with('success', $message);
 }
 }
