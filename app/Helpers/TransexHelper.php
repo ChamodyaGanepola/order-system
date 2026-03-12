@@ -101,30 +101,25 @@ class TransexHelper
     // ──────────────────────────────────────────────────────────────
 
     /**
-     * Create order via "Auto waybill without city" (bulk endpoint).
+     * Create order via "Single Auto waybill without city".
      *
-     * POST /orders/upload/auto-without-city
-     * Payload: [ { ... } ]   ← array of objects
-     * Requires: service-provider header
+     * POST /orders/upload/single-auto-without-city
+     * Payload: { ... }   ← single flat object
+     * Auth: Bearer API Key
      *
      * This is the DEFAULT method called from the order status flow.
      *
+     * Response: { "success": "...", "orders": { "waybill_id": "BB949711", ... } }
+     *
      * @param  \App\Models\Order  $order
-     * @param  string             $deliveryService  e.g. "koombiyo", "domex"
-     * @param  string             $city             City name (string)
+     * @param  string             $city   City name (string)
      * @return array
      */
-    public static function createOrder($order, string $deliveryService, string $city): array
+    public static function createOrder($order, string $city): array
     {
-        $payload = [
-            self::buildOrderPayload($order, ['city' => $city]),
-        ];
+        $payload = self::buildOrderPayload($order, ['city' => $city]);
 
-        return self::makeRequest(
-            '/orders/upload/auto-without-city',
-            $payload,
-            $deliveryService
-        );
+        return self::makeRequest('/orders/upload/single-auto-without-city', $payload);
     }
 
     /**

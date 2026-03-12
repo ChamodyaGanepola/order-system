@@ -223,12 +223,10 @@ public function updateStatus(Request $request, $orderId)
 
     if ($status === 'shipping' && !$order->waybill_number) {
         try {
-            $apiData = TransexHelper::createOrder($order, $deliveryService, $city);
+            $apiData = TransexHelper::createOrder($order, $city);
 
-            // The bulk auto-without-city endpoint returns an array of objects.
-            $waybillId = $apiData[0]['waybill_id']
-                ?? $apiData['waybill_id']
-                ?? null;
+            // Response: { "success": "...", "orders": { "waybill_id": "...", ... } }
+            $waybillId = $apiData['orders']['waybill_id'] ?? null;
 
             if ($waybillId) {
                 $order->waybill_number = $waybillId;
