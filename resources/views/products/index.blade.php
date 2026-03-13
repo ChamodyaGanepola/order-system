@@ -40,7 +40,7 @@
             <td style="display: flex; gap: 6px;">
                 <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Edit</a>
                 <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;">
-                    @csrf
+
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')">
                         <i class="fas fa-trash"></i> Delete

@@ -29,22 +29,19 @@
             <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
             @if(in_array($order->status, ['pending', 'shipping']))
-                <form action="{{ route('orders.updateStatus', $order) }}" method="POST">
-                    @csrf
-                    <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
-                        @if($order->status === 'pending')
-                            <option value="pending" selected>Pending</option>
-                            <option value="shipping">Shipping</option>
-                            <option value="rejected">Rejected</option>
-                        @elseif($order->status === 'shipping')
-                            <option value="shipping" selected>Shipping</option>
-                            <option value="completed">Completed</option>
-                            <option value="rejected">Rejected</option>
-                        @endif
-                    </select>
-                    <input type="hidden" name="delivery_service" id="delivery_{{ $order->id }}">
-                    <button type="submit" style="display:none;" id="submit_{{ $order->id }}"></button>
-                </form>
+
+<select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
+    @if($order->status === 'pending')
+        <option value="pending" selected>Pending</option>
+        <option value="shipping">Shipping</option>
+        <option value="rejected">Rejected</option>
+    @elseif($order->status === 'shipping')
+        <option value="shipping" selected>Shipping</option>
+        <option value="completed">Completed</option>
+        <option value="rejected">Rejected</option>
+    @endif
+</select>
+
             @else
                 @php
                     $statusColors = [
@@ -146,21 +143,6 @@
 <script>
 let currentOrderId = null; // store current order being updated
 
-function handleStatusChange(select, orderId) {
-    let status = select.value;
-
-    if(status !== "shipping") {
-        // Directly submit form if not shipping
-        document.getElementById("delivery_" + orderId).value = '';
-        document.getElementById("submit_" + orderId).click();
-        return;
-    }
-
-    // Show shipping card
-    currentOrderId = orderId;
-    document.getElementById("shipping-card").style.display = "block";
-    document.getElementById("overlay").style.display = "block";
-}
 
 // Close shipping card
 function closeShippingCard() {
@@ -173,36 +155,60 @@ function closeShippingCard() {
     }
 }
 
-// Submit shipping info
+function handleStatusChange(select, orderId) {
+    let status = select.value;
+
+    if (status !== 'shipping') {
+        // Send API request directly
+        updateStatusApi(orderId, status, '', '');
+        return;
+    }
+
+    // Show shipping card for shipping status
+    currentOrderId = orderId;
+    document.getElementById('shipping-card').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+}
+
 function submitShipping() {
-    let deliveryService = document.getElementById("delivery_service_input").value;
-    let city = document.getElementById("shipping_city_input").value; // Get city
+    let deliveryService = document.getElementById('delivery_service_input').value;
+    let city = document.getElementById('shipping_city_input').value;
 
-    if(!city) {
-        alert("Please enter a city!");
-        return;
-    }
-    if(!deliveryService) {
-        alert("Please select a delivery service!");
-        return;
-    }
+    if (!city) { alert('Enter a city!'); return; }
+    if (!deliveryService) { alert('Select a delivery service!'); return; }
 
-    // Set the values into the hidden fields of the status form
-    document.getElementById("delivery_" + currentOrderId).value = deliveryService;
-    
-    // Create the city hidden input if it doesn't exist, then set value
-    let cityInput = document.getElementById("city_" + currentOrderId);
-    if(!cityInput) {
-        cityInput = document.createElement("input");
-        cityInput.type = "hidden";
-        cityInput.name = "city";
-        cityInput.id = "city_" + currentOrderId;
-        document.querySelector('form[action*="update-status"]').appendChild(cityInput);
-    }
-    cityInput.value = city;
+    updateStatusApi(currentOrderId, 'shipping', deliveryService, city);
 
-    document.getElementById("submit_" + currentOrderId).click();
     closeShippingCard();
+}
+
+// Function to call API route
+function updateStatusApi(orderId, status, deliveryService, city) {
+    fetch('/api/orders/' + orderId + '/update-status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            status: status,
+            delivery_service: deliveryService,
+            city: city
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.success);
+            location.reload(); // reload page to show updated status
+        } else if (data.error) {
+            alert(data.error);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Failed to update status.');
+    });
 }
 </script>
 

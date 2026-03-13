@@ -7,7 +7,7 @@
 
 <div class="content-box" style="max-width: 600px;">
     <form action="/customers" method="POST">
-        @csrf
+
 
         <div class="form-group">
             <label for="full_name"><i class="fas fa-user"></i> Full Name *</label>

@@ -4,7 +4,7 @@
 <div class="content-box" style="max-width: 500px; margin: 0 auto;">
     <h3>✏️ Edit Product Variant</h3>
     <form action="{{ route('products.update', $product) }}" method="POST">
-        @csrf
+
         @method('PUT')
 
         <div class="form-group">

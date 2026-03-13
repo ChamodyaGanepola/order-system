@@ -1,12 +1,13 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Helpers\TransexHelper;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use App\Helpers\TransexHelper;
+
 class OrderController extends Controller
 {
     // Show form to create order for a customer
@@ -33,40 +34,44 @@ class OrderController extends Controller
         $total              = 0;
         $outOfStockProducts = [];
 
-       foreach ($request->products as $itemData) {
-    $quantity    = isset($itemData['quantity']) ? (int) $itemData['quantity'] : 1;
-    $productCode = $itemData['product_code'] ?? null;
-    $variant     = $itemData['other'] ?? 'N/A'; // exact variant
+        foreach ($request->products as $itemData) {
+            $quantity    = isset($itemData['quantity']) ? (int) $itemData['quantity'] : 1;
+            $productCode = $itemData['product_code'] ?? null;
+            $variant     = $itemData['other'] ?? 'N/A'; // exact variant
 
-    if (!$productCode || $quantity <= 0) continue;
+            if (! $productCode || $quantity <= 0) {
+                continue;
+            }
 
-    // Find the product with that variant
-    $product = Product::where('product_code', $productCode)
-                      ->where('other', $variant)
-                      ->first();
+            // Find the product with that variant
+            $product = Product::where('product_code', $productCode)
+                ->where('other', $variant)
+                ->first();
 
-    if (!$product) continue;
+            if (! $product) {
+                continue;
+            }
 
-    if ($product->stock < $quantity) {
-        $outOfStockProducts[] = $product->name . " ($variant) (Needed: $quantity, Available: $product->stock)";
-        continue;
-    }
+            if ($product->stock < $quantity) {
+                $outOfStockProducts[] = $product->name . " ($variant) (Needed: $quantity, Available: $product->stock)";
+                continue;
+            }
 
-    $subtotal = $product->price * $quantity;
+            $subtotal = $product->price * $quantity;
 
-    OrderItem::create([
-        'order_id'   => $order->id,
-        'product_id' => $product->id, // links to the variant
-        'quantity'   => $quantity,
-        'price'      => $product->price,
-        'subtotal'   => $subtotal,
-    ]);
+            OrderItem::create([
+                'order_id'   => $order->id,
+                'product_id' => $product->id, // links to the variant
+                'quantity'   => $quantity,
+                'price'      => $product->price,
+                'subtotal'   => $subtotal,
+            ]);
 
-    $product->stock -= $quantity;
-    $product->save();
+            $product->stock -= $quantity;
+            $product->save();
 
-    $total += $subtotal;
-}
+            $total += $subtotal;
+        }
 
         $order->total_amount = $total;
 
@@ -86,87 +91,91 @@ class OrderController extends Controller
         return redirect('/orders/pending')->with('success', 'Order created successfully!');
     }
     public function edit(Order $order)
-{
-    $products = Product::all(); // all products for dropdown
-    $order->load('customer', 'items.product'); // eager load
-    return view('orders.edit', compact('order', 'products'));
-}
+    {
+        $products = Product::all();                // all products for dropdown
+        $order->load('customer', 'items.product'); // eager load
+        return view('orders.edit', compact('order', 'products'));
+    }
 
-public function update(Request $request, Order $order)
-{
-    $request->validate([
-        'products' => 'required|array',
-    ]);
-
-    $existingItems = $order->items()->get()->keyBy('product_id'); // existing items
-    $total = 0;
-
-    $order->items()->delete(); // remove old items
-
-    foreach ($request->products as $productId => $quantity) {
-        $product = Product::find($productId);
-        if (!$product) continue;
-
-        // For already existing order items, allow editing even if stock=0
-        $oldQuantity = $existingItems->has($productId) ? $existingItems[$productId]->quantity : 0;
-
-        // Only check stock if new product or increasing quantity
-        if (!$existingItems->has($productId) && $quantity > $product->stock) {
-            return back()->with('error', "Cannot add {$product->name}. Stock not enough.");
-        }
-
-        $subtotal = $product->price * $quantity;
-
-        $order->items()->create([
-            'product_id' => $product->id,
-            'quantity'   => $quantity,
-            'price'      => $product->price,
-            'subtotal'   => $subtotal,
+    public function update(Request $request, Order $order)
+    {
+        $request->validate([
+            'products' => 'required|array',
         ]);
 
-        // Reduce stock only for newly added quantity
-        if (!$existingItems->has($productId)) {
-            $product->stock -= $quantity;
-            $product->save();
-        }
+        $existingItems = $order->items()->get()->keyBy('product_id'); // existing items
+        $total         = 0;
 
-        $total += $subtotal;
-    }
+        $order->items()->delete(); // remove old items
 
-    $order->total_amount = $total;
-    $order->save();
-
-    return redirect()->route('orders.index')->with('success', 'Order updated successfully!');
-}
-    // In your OrderController@outOfStock
-    public function outOfStock()
-{
-    $orders = Order::where('status', 'out_of_stock')
-        ->with('customer', 'items.product')
-        ->paginate(10);
-
-    $outOfStockSummary = [];
-
-    foreach ($orders as $order) {
-        foreach ($order->items as $item) {
-            $product = $item->product;
-            if (!$product) continue;
-
-            // Treat 'other' as string, default to 'N/A'
-            $variant = $product->other ?: 'N/A';
-
-            $key = $product->product_code . ' - ' . $variant;
-
-            if (!isset($outOfStockSummary[$key])) {
-                $outOfStockSummary[$key] = 0;
+        foreach ($request->products as $productId => $quantity) {
+            $product = Product::find($productId);
+            if (! $product) {
+                continue;
             }
 
-            $outOfStockSummary[$key] += $item->quantity;
-        }
-    }
+            // For already existing order items, allow editing even if stock=0
+            $oldQuantity = $existingItems->has($productId) ? $existingItems[$productId]->quantity : 0;
 
-    return view('orders.outofstock', compact('orders', 'outOfStockSummary'));
-}
+            // Only check stock if new product or increasing quantity
+            if (! $existingItems->has($productId) && $quantity > $product->stock) {
+                return back()->with('error', "Cannot add {$product->name}. Stock not enough.");
+            }
+
+            $subtotal = $product->price * $quantity;
+
+            $order->items()->create([
+                'product_id' => $product->id,
+                'quantity'   => $quantity,
+                'price'      => $product->price,
+                'subtotal'   => $subtotal,
+            ]);
+
+            // Reduce stock only for newly added quantity
+            if (! $existingItems->has($productId)) {
+                $product->stock -= $quantity;
+                $product->save();
+            }
+
+            $total += $subtotal;
+        }
+
+        $order->total_amount = $total;
+        $order->save();
+
+        return redirect()->route('orders.index')->with('success', 'Order updated successfully!');
+    }
+    // In your OrderController@outOfStock
+    public function outOfStock()
+    {
+        $orders = Order::where('status', 'out_of_stock')
+            ->with('customer', 'items.product')
+            ->paginate(10);
+
+        $outOfStockSummary = [];
+
+        foreach ($orders as $order) {
+            foreach ($order->items as $item) {
+                $product = $item->product;
+                if (! $product) {
+                    continue;
+                }
+
+                // Treat 'other' as string, default to 'N/A'
+                $variant = $product->other ?: 'N/A';
+
+                $key = $product->product_code . ' - ' . $variant;
+
+                if (! isset($outOfStockSummary[$key])) {
+                    $outOfStockSummary[$key] = 0;
+                }
+
+                $outOfStockSummary[$key] += $item->quantity;
+            }
+        }
+
+        return view('orders.outofstock', compact('orders', 'outOfStockSummary'));
+    }
 
     // Optional: show all pending orders
     public function pending(Request $request)
@@ -218,34 +227,27 @@ public function updateStatus(Request $request, $orderId)
     $order = Order::findOrFail($orderId);
     $status = $request->input('status');
     $deliveryService = $request->input('delivery_service');
-    $city = $request->input('city'); // New: captured from popup
+    $city = $request->input('city');
 
+    // Shipping logic
     if ($status === 'shipping' && !$order->waybill_number) {
         try {
-            $apiData = TransexHelper::createOrder($order, $deliveryService, $city);
+            $apiData = \App\Helpers\TransexHelper::createOrder($order, $deliveryService, $city);
 
-            // New single endpoint returns: { "success": "...", "orders": { "waybill_id": "..." } }
             if (isset($apiData['orders']['waybill_id'])) {
                 $order->waybill_number = $apiData['orders']['waybill_id'];
                 $order->delivery_service = $deliveryService;
             } else {
-                logger()->warning('Transex API response missing waybill_id', $apiData);
-                return back()->with('error', 'Transexpress did not return a waybill ID. Response: ' . json_encode($apiData));
+                return response()->json(['error' => 'Transexpress did not return a waybill ID'], 400);
             }
         } catch (\Exception $e) {
-            logger()->error("Shipping API Failed: " . $e->getMessage());
-            return back()->with('error', 'Could not sync with Transexpress: ' . $e->getMessage());
+            return response()->json(['error' => 'Could not sync with Transexpress: '.$e->getMessage()], 500);
         }
     }
 
     $order->status = $status;
     $order->save();
 
-    $message = 'Order status updated.';
-    if ($order->waybill_number && $status === 'shipping') {
-        $message = 'Order shipped successfully! Waybill ID: ' . $order->waybill_number;
-    }
-
-    return back()->with('success', $message);
+    return response()->json(['success' => 'Order status updated successfully.']);
 }
 }

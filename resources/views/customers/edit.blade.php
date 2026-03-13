@@ -7,7 +7,7 @@
 
 <div class="content-box" style="max-width: 600px;">
     <form action="{{ route('customers.update', $customer->id) }}" method="POST">
-        @csrf
+
         @method('PUT')
 
         <div class="form-group">

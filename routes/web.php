@@ -36,7 +36,8 @@ Route::get('/orders/completed', [OrderController::class, 'completed']);
 Route::get('/orders/shipping', [OrderController::class, 'shipping']);
 Route::get('/orders/rejected', [OrderController::class, 'rejected']);
 Route::get('/orders/outofstock', [OrderController::class,'outOfStock']);
-
+Route::post('/orders/{order}/update-status', [OrderController::class, 'updateStatus'])
+    ->name('orders.updateStatus');
 // Edit & Update
 Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
 Route::put('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
@@ -44,7 +45,6 @@ Route::put('/orders/{order}', [OrderController::class, 'update'])->name('orders.
 // Optional: show route if needed
 // Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-Route::post('/orders/{order}/update-status', [OrderController::class, 'updateStatus'])
-    ->name('orders.updateStatus');
+
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

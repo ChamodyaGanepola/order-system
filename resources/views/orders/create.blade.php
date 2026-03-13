@@ -10,7 +10,7 @@
 
 <div class="content-box">
     <form action="{{ isset($order) ? route('orders.update', $order->id) : url('/orders') }}" method="POST">
-        @csrf
+
         @if(isset($order)) @method('PUT') @endif
         <input type="hidden" name="customer_id" value="{{ $customer->id }}">
 

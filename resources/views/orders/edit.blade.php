@@ -10,7 +10,7 @@
 
 <div class="content-box">
     <form action="{{ route('orders.update', $order) }}" method="POST">
-        @csrf
+
         @method('PUT')
 
         <h3><i class="fas fa-box"></i> Order Items</h3>
