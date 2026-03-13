@@ -87,7 +87,7 @@
             <div class="card-content">
                 <div>
                     <h6><i class="fas fa-dollar-sign"></i> Total Revenue</h6>
-                    <h2>${{ number_format($totalRevenue, 2) }}</h2>
+                    <h2>Rs.{{ number_format($totalRevenue, 2) }}</h2>
                 </div>
                 <i class="fas fa-dollar-sign fa-3x card-icon"></i>
             </div>

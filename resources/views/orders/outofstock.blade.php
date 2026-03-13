@@ -55,7 +55,7 @@
                     <td>{{ $order->customer->full_name }}</td>
                     <td>{{ $product->product_code }}</td>
                     <td>{{ $variant }}</td>
-                    <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
+                    <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
                     <td>
                         <span style="background:#fee2e2;color:#991b1b;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;">
                             <i class="fas fa-times-circle"></i> Out Of Stock

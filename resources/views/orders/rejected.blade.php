@@ -20,7 +20,7 @@
         <tr>
             <td><strong>#{{ $order->id }}</strong></td>
             <td>{{ $order->customer->full_name }}</td>
-            <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
+            <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
                 <span style="background: #fee2e2; color: #7f1d1d; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                     <i class="fas fa-times-circle"></i> Rejected

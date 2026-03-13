@@ -20,7 +20,7 @@
         <tr>
             <td><strong>#{{ $order->id }}</strong></td>
             <td>{{ $order->customer->full_name }}</td>
-            <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
+            <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
                 <span style="background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                     <i class="fas fa-check-circle"></i> Completed

@@ -35,7 +35,7 @@
             <td>{{ $product->product_code }}</td>
             <td>{{ $product->other ?? 'N/A' }}</td>
             <td>{{ $product->name }}</td>
-            <td>${{ number_format($product->price, 2) }}</td>
+            <td>Rs.{{ number_format($product->price, 2) }}</td>
             <td>{{ $product->stock }}</td>
             <td style="display: flex; gap: 6px;">
                 <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Edit</a>

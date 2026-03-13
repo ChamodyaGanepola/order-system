@@ -31,7 +31,7 @@
         <tr>
             <td><strong>#{{ $order->id }}</strong></td>
             <td>{{ $order->customer->full_name }}</td>
-            <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
+            <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
                 <span style="background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                     <i class="fas fa-hourglass-half"></i> Pending
