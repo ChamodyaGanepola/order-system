@@ -229,22 +229,38 @@ public function updateStatus(Request $request, $orderId)
     $deliveryService = $request->input('delivery_service');
     $city = $request->input('city');
 
-    // Shipping logic
+    // Only update to shipping if waybill will be created
     if ($status === 'shipping' && !$order->waybill_number) {
         try {
-            $apiData = \App\Helpers\TransexHelper::createOrder($order, $deliveryService, $city);
+            if ($deliveryService === 'transexpress') {
+                // Transex API
+                $apiData = \App\Helpers\TransexHelper::createOrder($order, $deliveryService, $city);
 
-            if (isset($apiData['orders']['waybill_id'])) {
-                $order->waybill_number = $apiData['orders']['waybill_id'];
-                $order->delivery_service = $deliveryService;
+                if (isset($apiData['orders']['waybill_id'])) {
+                    $order->waybill_number = $apiData['orders']['waybill_id'];
+                    $order->delivery_service = $deliveryService;
+                } else {
+                    return response()->json(['error' => 'Transexpress did not return a waybill ID'], 400);
+                }
+            } elseif ($deliveryService === 'domestic') {
+                // FDE Domestic API
+                $apiData = \App\Helpers\FDEDomesticHelper::createOrder($order);
+
+                if (isset($apiData['waybill_no'])) {
+                    $order->waybill_number = $apiData['waybill_no'];
+                    $order->delivery_service = $deliveryService;
+                } else {
+                    return response()->json(['error' => 'FDE Domestic did not return a waybill number'], 400);
+                }
             } else {
-                return response()->json(['error' => 'Transexpress did not return a waybill ID'], 400);
+                return response()->json(['error' => 'Unknown delivery service'], 400);
             }
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Could not sync with Transexpress: '.$e->getMessage()], 500);
+            return response()->json(['error' => 'Could not sync with carrier: '.$e->getMessage()], 500);
         }
     }
 
+    // Update order status
     $order->status = $status;
     $order->save();
 

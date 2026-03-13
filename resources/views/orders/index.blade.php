@@ -18,7 +18,6 @@
             <th>Status</th>
             <th>Waybill Number</th>
             <th>Actions</th>
-
         </tr>
     </thead>
     <tbody>
@@ -28,44 +27,42 @@
             <td>{{ $order->customer->full_name }}</td>
             <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
-            @if(in_array($order->status, ['pending', 'shipping']))
-
-<select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
-    @if($order->status === 'pending')
-        <option value="pending" selected>Pending</option>
-        <option value="shipping">Shipping</option>
-        <option value="rejected">Rejected</option>
-    @elseif($order->status === 'shipping')
-        <option value="shipping" selected>Shipping</option>
-        <option value="completed">Completed</option>
-        <option value="rejected">Rejected</option>
-    @endif
-</select>
-
-            @else
-                @php
-                    $statusColors = [
-                        'completed'     => 'success',
-                        'rejected'      => 'danger',
-                        'out_of_stock'  => 'warning',
-                        'pending'       => 'primary',
-                        'shipping'      => 'info',
-                    ];
-                @endphp
-                <span class="btn btn-{{ $statusColors[$order->status] ?? 'secondary' }} btn-sm" style="pointer-events: none;">
-                    {{ ucfirst(str_replace('_', ' ', $order->status)) }}
-                </span>
-            @endif
+                @if(in_array($order->status, ['pending', 'shipping']))
+                <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
+                    @if($order->status === 'pending')
+                        <option value="pending" selected>Pending</option>
+                        <option value="shipping">Shipping</option>
+                        <option value="rejected">Rejected</option>
+                    @elseif($order->status === 'shipping')
+                        <option value="shipping" selected>Shipping</option>
+                        <option value="completed">Completed</option>
+                        <option value="rejected">Rejected</option>
+                    @endif
+                </select>
+                @else
+                    @php
+                        $statusColors = [
+                            'completed'     => 'success',
+                            'rejected'      => 'danger',
+                            'out_of_stock'  => 'warning',
+                            'pending'       => 'primary',
+                            'shipping'      => 'info',
+                        ];
+                    @endphp
+                    <span class="btn btn-{{ $statusColors[$order->status] ?? 'secondary' }} btn-sm" style="pointer-events: none;">
+                        {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                    </span>
+                @endif
             </td>
-          <td>
-@if($order->waybill_number)
-    <a href="https://portal.transexpress.lk/track/{{ $order->waybill_number }}" target="_blank">
-        {{ $order->waybill_number }}
-    </a>
-@else
-    -
-@endif
-</td>
+            <td>
+                @if($order->waybill_number)
+                    <a href="https://portal.transexpress.lk/track/{{ $order->waybill_number }}" target="_blank">
+                        {{ $order->waybill_number }}
+                    </a>
+                @else
+                    -
+                @endif
+            </td>
             <td>
                 <div class="action-buttons">
                     @if(in_array($order->status, ['pending', 'shipping', 'out_of_stock']))
@@ -94,27 +91,72 @@
 </div>
 @endif
 
-<!-- Delivery Service Card -->
-<!-- Shipping Info Card (Initially Hidden) -->
+<!-- Shipping Info Modal -->
 <div id="shipping-card" style="display:none; position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%); background: white; padding: 20px;
-    border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; width: 300px;">
+    border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; width: 350px;">
     <h4>Shipping Details</h4>
     <form id="shipping-form">
         <div class="form-group" style="margin-bottom:10px;">
-            <label for="shipping_city">City</label>
-            <input type="text" id="shipping_city_input" class="form-control" placeholder="e.g. Colombo 03" required>
-        </div>
-
-        <div class="form-group" style="margin-bottom:10px;">
             <label for="delivery_service">Delivery Service</label>
             <select id="delivery_service_input" class="form-control">
-                <option value="">Select Delivery Service</option>
-                <option value="koombiyo">Koombiyo</option>
-                <option value="domex">Domex</option>
-                <option value="promptxpress">Prompt Xpress</option>
-                <option value="pickme">PickMe Flash</option>
-            </select>
+    <option value="transexpress" selected>Trans Express (Sri Lanka)</option>
+    <option value="domestic">Fadar Express / Domestic</option>
+</select>
+        </div>
+
+        <!-- Trans Express fields -->
+        <div id="transex_fields" style="display:none;">
+            <div class="form-group">
+                <label for="province">Province</label>
+                <select id="province_select" class="form-control">
+                    <option value="">Select Province</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="district">District</label>
+                <select id="district_select" class="form-control" disabled>
+                    <option value="">Select District</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="city">City</label>
+                <select id="city_select" class="form-control" disabled>
+                    <option value="">Select City</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Domestic fields -->
+        <div id="domestic_fields" style="display:none;">
+            <div class="form-group">
+                <label for="province_domestic">Province</label>
+                <select id="province_domestic" class="form-control">
+                    <option value="">Select Province</option>
+                    <option value="Western">Western</option>
+                    <option value="Central">Central</option>
+                    <option value="Southern">Southern</option>
+                    <option value="Northern">Northern</option>
+                    <option value="Eastern">Eastern</option>
+                    <option value="North Western">North Western</option>
+                    <option value="North Central">North Central</option>
+                    <option value="Uva">Uva</option>
+                    <option value="Sabaragamuwa">Sabaragamuwa</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="city_domestic">City</label>
+                <select id="city_domestic" class="form-control">
+    <option value="Colombo" selected>Colombo</option>
+    <option value="Kandy">Kandy</option>
+    <option value="Galle">Galle</option>
+    <option value="Jaffna">Jaffna</option>
+    <option value="Kurunegala">Kurunegala</option>
+    <option value="Anuradhapura">Anuradhapura</option>
+    <option value="Matale">Matale</option>
+    <option value="Matara">Matara</option>
+</select>
+            </div>
         </div>
 
         <div style="display:flex; justify-content: flex-end; gap:10px;">
@@ -128,164 +170,175 @@
 <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
     background: rgba(0,0,0,0.5); z-index: 9998;"></div>
 
-<style>
-/* optional: fade in effect */
-#delivery-card.show {
-    display: flex !important;
-    animation: fadeIn 0.2s ease-in-out;
-}
-@keyframes fadeIn {
-    from {opacity: 0;}
-    to {opacity: 1;}
-}
-</style>
-
 <script>
-let currentOrderId = null; // store current order being updated
-
-
-// Close shipping card
-function closeShippingCard() {
-    document.getElementById("shipping-card").style.display = "none";
-    document.getElementById("overlay").style.display = "none";
-    if(currentOrderId) {
-        // reset select back to pending
-        document.querySelector('select[name="status"][onchange*="'+currentOrderId+'"]').value = 'pending';
-        currentOrderId = null;
-    }
-}
+let currentOrderId = null;
 
 function handleStatusChange(select, orderId) {
-    let status = select.value;
+    const status = select.value;
 
     if (status !== 'shipping') {
-        // Send API request directly
+        // Update immediately if not shipping
         updateStatusApi(orderId, status, '', '');
         return;
     }
 
-    // Show shipping card for shipping status
+    // If shipping, just open modal
     currentOrderId = orderId;
     document.getElementById('shipping-card').style.display = 'block';
     document.getElementById('overlay').style.display = 'block';
 }
 
+function closeShippingCard() {
+    document.getElementById('shipping-card').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+
+    // Reset the dropdown to pending if modal closed without submitting
+    if (currentOrderId) {
+        const select = document.querySelector(`select[name="status"][onchange*="${currentOrderId}"]`);
+        if(select) select.value = 'pending';
+        currentOrderId = null;
+    }
+}
+
 function submitShipping() {
-    let deliveryService = document.getElementById('delivery_service_input').value;
-    let city = document.getElementById('shipping_city_input').value;
+    const deliveryService = document.getElementById('delivery_service_input').value;
+    const city = deliveryService === 'transexpress'
+        ? document.getElementById('city_select').value
+        : document.getElementById('city_domestic').value;
 
-    if (!city) { alert('Enter a city!'); return; }
-    if (!deliveryService) { alert('Select a delivery service!'); return; }
+    if (!deliveryService) { alert('Select delivery service'); return; }
+    if (!city) { alert('Select a city'); return; }
 
-    updateStatusApi(currentOrderId, 'shipping', deliveryService, city);
-
-    closeShippingCard();
-}
-
-// Function to call API route
-function updateStatusApi(orderId, status, deliveryService, city) {
-    fetch('/api/orders/' + orderId + '/update-status', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-            status: status,
-            delivery_service: deliveryService,
-            city: city
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.success);
-            location.reload(); // reload page to show updated status
-        } else if (data.error) {
-            alert(data.error);
+    fetch('/api/orders/' + currentOrderId + '/update-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ status: 'shipping', delivery_service: deliveryService, city })
+})
+.then(res => res.json())
+.then(async data => {
+    if (data.success) {
+        if (deliveryService === 'transexpress') {
+            await fetch(`/api/orders/${currentOrderId}/transex-order`, { method: 'POST' });
+        } else if (deliveryService === 'domestic') {
+            await fetch(`/api/orders/${currentOrderId}/fde-order`, { method: 'POST' });
         }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Failed to update status.');
-    });
+        alert(data.success);
+        location.reload();
+    } else if(data.error) alert(data.error);
+})
+.catch(err => { console.error(err); alert('Failed to update status.'); });
+
+closeShippingCard();
 }
+// API call
+function updateStatusApi(orderId,status,deliveryService,city){
+    fetch('/api/orders/'+orderId+'/update-status',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({status, delivery_service: deliveryService, city})
+    }).then(res=>res.json()).then(data=>{
+        if(data.success){ alert(data.success); location.reload(); }
+        else if(data.error) alert(data.error);
+    }).catch(err=>{ console.error(err); alert('Failed to update status.'); });
+}
+
+// Delivery service selection
+// Show/hide fields on page load based on default selected value
+window.addEventListener('DOMContentLoaded', () => {
+    const val = document.getElementById('delivery_service_input').value;
+    document.getElementById('transex_fields').style.display = val==='transexpress' ? 'block' : 'none';
+    document.getElementById('domestic_fields').style.display = val==='domestic' ? 'block' : 'none';
+    if(val==='transexpress') loadTransexProvinces();
+});
+
+// Trans Express provinces/districts
+function loadTransexProvinces(){
+    const provinceSelect = document.getElementById('province_select');
+    const districtSelect = document.getElementById('district_select');
+    const citySelect = document.getElementById('city_select');
+
+    // Clear previous options
+    provinceSelect.innerHTML = '';
+    districtSelect.innerHTML = '';
+    citySelect.innerHTML = '';
+    districtSelect.disabled = true;
+    citySelect.disabled = true;
+
+    // Fetch provinces
+    fetch('https://portal.transexpress.lk/api/provinces', { headers: { 'Accept':'application/json' } })
+    .then(res => res.json())
+    .then(provinces => {
+        provinces.forEach((p,i) => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.text;
+            provinceSelect.appendChild(opt);
+        });
+        // Auto-select first province
+        provinceSelect.selectedIndex = 0;
+        loadDistricts(provinceSelect.value);
+    });
+
+    // Province change
+    provinceSelect.addEventListener('change', ()=>loadDistricts(provinceSelect.value));
+
+    function loadDistricts(provinceId){
+        districtSelect.innerHTML = '';
+        citySelect.innerHTML = '';
+        districtSelect.disabled = true;
+        citySelect.disabled = true;
+        if(!provinceId) return;
+
+        fetch(`https://portal.transexpress.lk/api/districts?province_id=${provinceId}`, { headers:{'Accept':'application/json'} })
+        .then(res=>res.json())
+        .then(districts=>{
+            districts.forEach(d=>{
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.text;
+                districtSelect.appendChild(opt);
+            });
+            // Auto-select first district
+            districtSelect.selectedIndex = 0;
+            loadCities(districtSelect.value);
+            districtSelect.disabled = false;
+        });
+    }
+
+    // District change
+    districtSelect.addEventListener('change', ()=>loadCities(districtSelect.value));
+
+    function loadCities(districtId){
+        citySelect.innerHTML = '';
+        citySelect.disabled = true;
+        if(!districtId) return;
+
+        fetch(`https://portal.transexpress.lk/api/cities?district_id=${districtId}`, { headers:{'Accept':'application/json'} })
+        .then(res=>res.json())
+        .then(cities=>{
+            cities.forEach(c=>{
+                const opt = document.createElement('option');
+                opt.value = c.text;
+                opt.textContent = c.text;
+                citySelect.appendChild(opt);
+            });
+            // Auto-select first city
+            if(cities.length>0) citySelect.selectedIndex = 0;
+            citySelect.disabled = false;
+        });
+    }
+}
+
+
+
 </script>
 
 <style>
-.pagination-links .pagination {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.pagination-links .page-item .page-link {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    color: #1e293b;
-    transition: all 0.2s;
-}
-
-.pagination-links .page-item.active .page-link {
-    background-color: #2563eb;
-    color: white;
-    border-color: #2563eb;
-}
-
-.pagination-links .page-item.disabled .page-link {
-    color: #b0b0b0;
-    cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-    .pagination-container {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-    }
-}
-</style>
-
-<style>
-.pagination-links .pagination {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.pagination-links .page-item .page-link {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    color: #1e293b;
-    transition: all 0.2s;
-}
-
-.pagination-links .page-item.active .page-link {
-    background-color: #2563eb;
-    color: white;
-    border-color: #2563eb;
-}
-
-.pagination-links .page-item.disabled .page-link {
-    color: #b0b0b0;
-    cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-    .pagination-container {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-    }
-}
+.pagination-links .pagination { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pagination-links .page-item .page-link { padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.2s; }
+.pagination-links .page-item.active .page-link { background-color: #2563eb; color: white; border-color: #2563eb; }
+.pagination-links .page-item.disabled .page-link { color: #b0b0b0; cursor: not-allowed; }
+@media (max-width: 768px) { .pagination-container { flex-direction: column; align-items: center; gap: 8px; } }
 </style>
 
 @else
@@ -293,7 +346,6 @@ function updateStatusApi(orderId, status, deliveryService, city) {
     <i class="fas fa-boxes"></i>
     <h3>No Orders Found</h3>
     <p>Create your first order by selecting a customer</p>
-
 </div>
 @endif
 @endsection
