@@ -8,6 +8,7 @@
     "require": {
         "ext-gd": "*",
         "php": "^8.2",
+        "extensions": ["gd", "zip", "ctype", "curl", "dom", "fileinfo", "filter", "hash", "mbstring", "openssl", "pcre", "pdo", "session", "tokenizer", "xml"],
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1"
