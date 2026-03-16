@@ -13,7 +13,7 @@ class FDEDomesticHelper
     /**
      * Create a new order on FDE Domestic
      */
-    public static function createOrder($order, $parcelWeight = 1, $exchange = 0)
+    public static function createOrder($order, $parcelWeight = 1, $exchange = 0, $city = null)
     {
         $clientId = env('FDE_CLIENT_ID');
         $apiKey   = env('FDE_API_KEY');
@@ -22,20 +22,26 @@ class FDEDomesticHelper
             throw new \Exception('FDE Domestic credentials not set in .env');
         }
 
-        $postData = [
-            'client_id'          => $clientId,
-            'api_key'            => $apiKey,
-            'order_id'           => $order->id,
-            'parcel_weight'      => $parcelWeight,
-            'parcel_description' => 'Order #' . $order->id,
-            'recipient_name'     => $order->customer->full_name,
-            'recipient_contact_1'=> preg_replace('/\D/', '', $order->customer->phone_number),
-            'recipient_contact_2'=> isset($order->customer->phone_number_2) ? preg_replace('/\D/', '', $order->customer->phone_number_2) : '',
-            'recipient_address'  => $order->customer->street_address,
-            'recipient_city'     => $order->shipping_city ?? 'Unknown',
-            'amount'             => $order->total_amount,
-            'exchange'           => $exchange,
-        ];
+            if (!$city) {
+        throw new \Exception('City is required for FDE Domestic API.');
+    }
+
+    $postData = [
+        'client_id'          => $clientId,
+        'api_key'            => $apiKey,
+        'order_id'           => $order->id,
+        'parcel_weight'      => $parcelWeight,
+        'parcel_description' => 'Order #' . $order->id,
+        'recipient_name'     => $order->customer->full_name,
+        'recipient_contact_1'=> preg_replace('/\D/', '', $order->customer->phone_number),
+        'recipient_contact_2'=> isset($order->customer->phone_number_2) ? preg_replace('/\D/', '', $order->customer->phone_number_2) : '',
+        'recipient_address'  => $order->customer->street_address,
+        'recipient_city'     => $city,
+        'amount'             => $order->total_amount,
+        'exchange'           => $exchange,
+    ];
+
+
 
         $response = Http::asForm()->post(self::apiEndpoint(), $postData);
 

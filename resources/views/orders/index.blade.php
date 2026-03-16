@@ -158,7 +158,10 @@
 </select>
             </div>
         </div>
-
+ <div class="form-group">
+        <label>Parcel Weight (kg)</label>
+        <input type="number" id="parcel_weight" class="form-control" value="1" min="1">
+    </div>
         <div style="display:flex; justify-content: flex-end; gap:10px;">
             <button type="button" class="btn btn-secondary" onclick="closeShippingCard()">Cancel</button>
             <button type="button" class="btn btn-primary" onclick="submitShipping()">Submit</button>
@@ -202,33 +205,57 @@ function closeShippingCard() {
 
 function submitShipping() {
     const deliveryService = document.getElementById('delivery_service_input').value;
+
     const city = deliveryService === 'transexpress'
         ? document.getElementById('city_select').value
         : document.getElementById('city_domestic').value;
 
-    if (!deliveryService) { alert('Select delivery service'); return; }
-    if (!city) { alert('Select a city'); return; }
+    const weight = document.getElementById('parcel_weight').value || 1;
+
+    if (!deliveryService) {
+        alert('Select delivery service');
+        return;
+    }
+
+    if (!city) {
+        alert('Select a city');
+        return;
+    }
+
+    const data = {
+        status: 'shipping',
+        delivery_service: deliveryService,
+        city: city,
+        weight: weight
+    };
+
+    console.log("Sending order ID:", currentOrderId);
 
     fetch('/api/orders/' + currentOrderId + '/update-status', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ status: 'shipping', delivery_service: deliveryService, city })
-})
-.then(res => res.json())
-.then(async data => {
-    if (data.success) {
-        if (deliveryService === 'transexpress') {
-            await fetch(`/api/orders/${currentOrderId}/transex-order`, { method: 'POST' });
-        } else if (deliveryService === 'domestic') {
-            await fetch(`/api/orders/${currentOrderId}/fde-order`, { method: 'POST' });
-        }
-        alert(data.success);
-        location.reload();
-    } else if(data.error) alert(data.error);
-})
-.catch(err => { console.error(err); alert('Failed to update status.'); });
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log(data);
 
-closeShippingCard();
+        if (data.success) {
+            alert(data.success);
+            location.reload();
+        } else if (data.error) {
+            alert(data.error);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Failed to update status.');
+    });
+
+    closeShippingCard();
 }
 // API call
 function updateStatusApi(orderId,status,deliveryService,city){
@@ -248,9 +275,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const val = document.getElementById('delivery_service_input').value;
     document.getElementById('transex_fields').style.display = val==='transexpress' ? 'block' : 'none';
     document.getElementById('domestic_fields').style.display = val==='domestic' ? 'block' : 'none';
+
+    // Show/hide weight field
+    document.getElementById('parcel_weight').parentElement.style.display = val==='domestic' ? 'block' : 'none';
+
     if(val==='transexpress') loadTransexProvinces();
 });
 
+document.getElementById('delivery_service_input').addEventListener('change', function() {
+    const val = this.value;
+    document.getElementById('transex_fields').style.display = val==='transexpress' ? 'block' : 'none';
+    document.getElementById('domestic_fields').style.display = val==='domestic' ? 'block' : 'none';
+    document.getElementById('parcel_weight').parentElement.style.display = val==='domestic' ? 'block' : 'none';
+});
 // Trans Express provinces/districts
 function loadTransexProvinces(){
     const provinceSelect = document.getElementById('province_select');

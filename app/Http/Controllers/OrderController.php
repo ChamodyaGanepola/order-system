@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Helpers\TransexHelper;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -222,48 +221,56 @@ class OrderController extends Controller
         return view('orders.completed', compact('orders'));
     }
 
-public function updateStatus(Request $request, $orderId)
-{
-    $order = Order::findOrFail($orderId);
-    $status = $request->input('status');
-    $deliveryService = $request->input('delivery_service');
-    $city = $request->input('city');
+    public function updateStatus(Request $request, $orderId)
+    {
+        $order           = Order::findOrFail($orderId);
+        $status          = $request->input('status');
+        $deliveryService = $request->input('delivery_service');
+        $city            = $request->input('city');
 
-    // Only update to shipping if waybill will be created
-    if ($status === 'shipping' && !$order->waybill_number) {
-        try {
-            if ($deliveryService === 'transexpress') {
-                // Transex API
-                $apiData = \App\Helpers\TransexHelper::createOrder($order, $deliveryService, $city);
+        // Only update to shipping if waybill will be created
+        if ($status === 'shipping' && ! $order->waybill_number) {
+            try {
+                $weight = $request->input('weight', 1);
+                if ($deliveryService === 'transexpress') {
+                    // Transex API
+                    $apiData = \App\Helpers\TransexHelper::createOrder($order, $deliveryService, $city);
 
-                if (isset($apiData['orders']['waybill_id'])) {
-                    $order->waybill_number = $apiData['orders']['waybill_id'];
-                    $order->delivery_service = $deliveryService;
+                    if (isset($apiData['orders']['waybill_id'])) {
+                        $order->waybill_number   = $apiData['orders']['waybill_id'];
+                        $order->delivery_service = $deliveryService;
+                    } else {
+                        return response()->json(['error' => 'Transexpress did not return a waybill ID'], 400);
+                    }
+                } elseif ($deliveryService === 'domestic') {
+                    $city   = $request->input('city'); // <- get city from request
+                    $weight = $request->input('weight', 1);
+
+                    $apiData = \App\Helpers\FDEDomesticHelper::createOrder($order, $weight, 0, $city);
+
+                    if (isset($apiData['waybill_no'])) {
+                        $order->waybill_number   = $apiData['waybill_no'];
+                        $order->delivery_service = $deliveryService;
+                    } else {
+                        return response()->json(['error' => 'FDE Domestic did not return a waybill number'], 400);
+                    }
                 } else {
-                    return response()->json(['error' => 'Transexpress did not return a waybill ID'], 400);
+                    return response()->json(['error' => 'Unknown delivery service'], 400);
                 }
-            } elseif ($deliveryService === 'domestic') {
-                // FDE Domestic API
-                $apiData = \App\Helpers\FDEDomesticHelper::createOrder($order);
-
-                if (isset($apiData['waybill_no'])) {
-                    $order->waybill_number = $apiData['waybill_no'];
-                    $order->delivery_service = $deliveryService;
-                } else {
-                    return response()->json(['error' => 'FDE Domestic did not return a waybill number'], 400);
-                }
-            } else {
-                return response()->json(['error' => 'Unknown delivery service'], 400);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Could not sync with carrier: ' . $e->getMessage()], 500);
             }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Could not sync with carrier: '.$e->getMessage()], 500);
         }
+
+        // Update order status
+        $order->status = $status;
+        $order->save();
+
+        return response()->json([
+            'success'          => 'Order status updated successfully.',
+            'order_id'         => $order->id,
+            'waybill_number'   => $order->waybill_number,
+            'delivery_service' => $order->delivery_service,
+        ]);
     }
-
-    // Update order status
-    $order->status = $status;
-    $order->save();
-
-    return response()->json(['success' => 'Order status updated successfully.']);
-}
 }
