@@ -14,6 +14,7 @@
         <tr>
             <th>Order ID</th>
             <th>Customer</th>
+            <th>Customer Address</th>
             <th>Total Amount</th>
             <th>Status</th>
             <th>Waybill Number</th>
@@ -25,6 +26,7 @@
         <tr>
             <td><strong>#{{ $order->id }}</strong></td>
             <td>{{ $order->customer->full_name }}</td>
+            <td>{{ $order->customer->street_address}}</td>
             <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
                 @if(in_array($order->status, ['pending', 'shipping']))
