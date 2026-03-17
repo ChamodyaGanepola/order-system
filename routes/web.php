@@ -5,7 +5,10 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Helpers\TransexHelper;
-
+Route::get('/run-migrations', function() {
+    Artisan::call('migrate', ['--force' => true]);
+    return 'Migrations ran!';
+});
 Route::resource('products', ProductController::class)->except(['show']);
 
 Route::get('/test-token', function() {
