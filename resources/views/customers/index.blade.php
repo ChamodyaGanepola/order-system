@@ -41,7 +41,7 @@
         <i class="fas fa-upload"></i> Import Customers from Excel
     </h3>
     <form action="{{ route('customers.import') }}" method="POST" enctype="multipart/form-data" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
-
+@csrf
         <div style="flex: 1; min-width: 180px;">
             <input type="file" name="file" required style="padding: 10px; border: 2px solid #e2e8f0; border-radius: 6px; width: 100%;">
         </div>
@@ -75,7 +75,7 @@
                         <i class="fas fa-edit fa-sm"></i> Edit
                     </a>
                     <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" style="display:inline;">
-
+@csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger btn-sm" style="display: flex; align-items: center; gap: 4px;">
                             <i class="fas fa-trash fa-sm"></i> Delete

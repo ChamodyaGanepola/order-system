@@ -10,6 +10,9 @@ class VerifyCsrfToken extends Middleware
      * Disable CSRF verification for all routes.
      */
     protected $except = [
-        '*'
+
+    'customers/import',   // exclude the import route
+    'orders/*/update-status', // example for other POST routes
+
     ];
 }

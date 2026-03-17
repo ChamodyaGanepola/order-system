@@ -4,7 +4,7 @@
 <div class="content-box" style="max-width: 500px; margin: 0 auto;">
     <h3>➕ Add Product Variant</h3>
     <form action="{{ route('products.store') }}" method="POST">
-
+@csrf
 
         <div class="form-group">
             <label>Product Code</label>
