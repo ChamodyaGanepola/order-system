@@ -10,14 +10,13 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('product_code');       // main product code
-            $table->string('other')->nullable();  // variant (chain, bracelet, etc.)
-            $table->string('name');               // product name
-            $table->decimal('price', 10, 2);     // price
-            $table->integer('stock');             // stock
+            $table->string('product_code');
+            $table->string('other')->nullable();
+            $table->string('name');
+            $table->decimal('price', 10, 2);
+            $table->integer('stock');
             $table->timestamps();
 
-            // make combination of product_code + variant unique
             $table->unique(['product_code', 'other'], 'unique_product_variant');
         });
     }
