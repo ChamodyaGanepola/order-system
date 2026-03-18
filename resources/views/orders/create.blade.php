@@ -9,8 +9,9 @@
 </div>
 
 <div class="content-box">
-    <form action="{{ isset($order) ? route('orders.update', $order->id) : url('/orders') }}" method="POST"
-         onsubmit="return confirm('Are you sure you want to add this order? ');">
+<form id="order-form"
+      action="{{ isset($order) ? route('orders.update', $order->id) : url('/orders') }}"
+      method="POST">
 @csrf
         @if(isset($order)) @method('PUT') @endif
         <input type="hidden" name="customer_id" value="{{ $customer->id }}">
@@ -116,6 +117,38 @@
 </div>
 
 <script>
+    document.getElementById('order-form').addEventListener('submit', function(e) {
+
+    const rows = document.querySelectorAll('#order-items-table tbody tr');
+
+    if (rows.length === 0) {
+        alert('Please add at least one product before creating order.');
+        e.preventDefault();
+        return;
+    }
+
+    let valid = true;
+
+    rows.forEach(row => {
+        const qtyInput = row.querySelector('input[type="number"]');
+        const qty = parseInt(qtyInput.value);
+
+        if (!qty || qty < 1) {
+            valid = false;
+        }
+    });
+
+    if (!valid) {
+        alert('Please add quantity for all products before creating order.');
+        e.preventDefault();
+        return;
+    }
+
+    // Optional confirmation
+    if (!confirm('Are you sure you want to add this order?')) {
+        e.preventDefault();
+    }
+});
 document.getElementById('add-product-btn').addEventListener('click', function() {
     const select = document.getElementById('add-product-select');
     const quantityInput = document.getElementById('add-product-quantity');
