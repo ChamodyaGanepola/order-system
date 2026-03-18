@@ -3,7 +3,7 @@
 @section('content')
 <div class="content-box" style="max-width: 500px; margin: 0 auto;">
     <h3>✏️ Edit Product Variant</h3>
-    <form action="{{ route('products.update', $product) }}" method="POST">
+    <form action="{{ route('products.update', $product) }}" method="POST"
         onsubmit="return confirm('Are you sure you want to update this product variant? ');">
 @csrf
         @method('PUT')

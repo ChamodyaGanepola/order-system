@@ -65,18 +65,18 @@
                     -
                 @endif
             </td>
-            <td>
-                <div class="action-buttons">
-                    @if(in_array($order->status, ['pending', 'shipping', 'out_of_stock']))
-                    <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
-                    @endif
-                    <a href="{{ route('orders.show', $order->id) }}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-eye"></i> View Order
-                    </a>
-                </div>
-            </td>
+           <td>
+    <div class="action-buttons" style="display:flex; gap:4px; justify-content:center;">
+        @if(in_array($order->status, ['pending', 'shipping', 'out_of_stock']))
+        <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm" title="Edit">
+            <i class="fas fa-edit"></i>
+        </a>
+        @endif
+        <a href="{{ route('orders.show', $order->id) }}" class="btn btn-primary btn-sm" title="View Order">
+            <i class="fas fa-eye"></i>
+        </a>
+    </div>
+</td>
         </tr>
         @endforeach
     </tbody>
@@ -373,6 +373,26 @@ function loadTransexProvinces(){
 </script>
 
 <style>
+/* Make status dropdown fit the table cell */
+td select[name="status"] {
+    width: 100%;        /* take full width of the cell */
+    max-width: 120px;   /* optional: prevent too wide */
+    padding: 2px 6px;
+    font-size: 13px;
+    border-radius: 4px;
+}
+
+td.status-column select {
+    min-width: 120px;
+}
+/* Apply only once */
+.status-select {
+    min-width: 120px;   /* enough for 'Pending', 'Shipping', etc. */
+    max-width: 150px;   /* optional: prevent huge stretch */
+    padding: 2px 6px;
+    font-size: 0.85rem; /* readable font */
+    border-radius: 4px;
+}
 .pagination-links .pagination { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pagination-links .page-item .page-link { padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.2s; }
 .pagination-links .page-item.active .page-link { background-color: #2563eb; color: white; border-color: #2563eb; }
