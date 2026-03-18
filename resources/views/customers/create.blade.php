@@ -30,15 +30,7 @@
             <textarea id="street_address" name="street_address" required placeholder="Full street address"></textarea>
         </div>
 
-        <div class="form-group">
-            <label for="other"><i class="fas fa-info-circle"></i> Additional Notes</label>
-            <input type="text" id="other" name="other" placeholder="Any additional information">
-        </div>
-
-        <div class="form-group">
-            <label for="product_code"><i class="fas fa-barcode"></i> Product Code</label>
-            <input type="text" id="product_code" name="product_code" placeholder="Product code or SKU">
-        </div>
+       
 
         <div class="btn-group">
             <button type="submit" class="btn btn-primary">

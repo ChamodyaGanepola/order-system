@@ -9,8 +9,7 @@
 </div>
 
 <div class="content-box">
-    <form action="{{ route('orders.update', $order) }}" method="POST"
-         onsubmit="return confirm('Are you sure you want to edit this order? ');">
+  <form id="order-form" action="{{ route('orders.update', $order) }}" method="POST">
 @csrf
         @method('PUT')
 
@@ -70,6 +69,41 @@
 </div>
 
 <script>
+    document.getElementById('order-form').addEventListener('submit', function(e) {
+
+    const rows = document.querySelectorAll('#order-items-table tbody tr');
+
+    // ❌ No products
+    if (rows.length === 0) {
+        alert('Please keep at least one product in the order.');
+        e.preventDefault();
+        return;
+    }
+
+    let valid = true;
+
+    rows.forEach(row => {
+        const qtyInput = row.querySelector('input[type="number"]');
+        const qty = parseInt(qtyInput.value);
+
+        if (!qty || qty < 1) {
+            qtyInput.focus(); // focus first wrong input
+            valid = false;
+        }
+    });
+
+    // ❌ Invalid quantity
+    if (!valid) {
+        alert('Please enter valid quantity for all products.');
+        e.preventDefault();
+        return;
+    }
+
+    // ✅ Confirm
+    if (!confirm('Are you sure you want to update this order?')) {
+        e.preventDefault();
+    }
+});
 document.getElementById('add-product-btn').addEventListener('click', function() {
     const select = document.getElementById('add-product-select');
     const quantityInput = document.getElementById('add-product-quantity');
