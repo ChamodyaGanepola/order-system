@@ -70,9 +70,9 @@
                                 N/A
                             @endif
                         </td>
-                        <td>${{ number_format($item->price, 2) }}</td>
+                        <td>Rs. {{ number_format($item->price, 2) }}</td>
                         <td>{{ $item->quantity }}</td>
-                        <td>${{ number_format($item->subtotal, 2) }}</td>
+                        <td>Rs. {{ number_format($item->subtotal, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -80,7 +80,7 @@
         </div>
         <div class="card-footer d-flex justify-content-between align-items-center">
             <span class="fw-bold">Total Amount:</span>
-            <span class="fs-5 fw-bold text-success">${{ number_format($order->total_amount, 2) }}</span>
+            <span class="fs-5 fw-bold text-success">Rs. {{ number_format($order->total_amount, 2) }}</span>
         </div>
     </div>
 
