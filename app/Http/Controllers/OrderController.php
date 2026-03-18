@@ -36,47 +36,39 @@ class OrderController extends Controller
             'status'       => 'pending',
         ]);
 
-        $total              = 0;
-        $outOfStockProducts = [];
+        $total = 0;
+$outOfStockProducts = [];
 
-        foreach ($request->products as $itemData) {
-            $quantity    = isset($itemData['quantity']) ? (int) $itemData['quantity'] : 1;
-            $productCode = $itemData['product_code'] ?? null;
-            $variant     = $itemData['other'] ?? 'N/A'; // exact variant
+foreach ($request->products as $productId => $quantity) {
 
-            if (! $productCode || $quantity <= 0) {
-                continue;
-            }
+    $product = Product::find($productId);
 
-            // Find the product with that variant
-            $product = Product::where('product_code', $productCode)
-                ->where('other', $variant)
-                ->first();
+    if (!$product || $quantity <= 0) {
+        continue;
+    }
 
-            if (! $product) {
-                continue;
-            }
+    if ($product->stock < $quantity) {
+        $outOfStockProducts[] = "{$product->name} (Needed: $quantity, Available: $product->stock)";
+        continue;
+    }
 
-            if ($product->stock < $quantity) {
-                $outOfStockProducts[] = $product->name . " ($variant) (Needed: $quantity, Available: $product->stock)";
-                continue;
-            }
+    $subtotal = $product->price * $quantity;
 
-            $subtotal = $product->price * $quantity;
+    OrderItem::create([
+        'order_id'   => $order->id,
+        'product_id' => $product->id,
+        'quantity'   => $quantity,
+        'price'      => $product->price,
+        'subtotal'   => $subtotal,
+    ]);
 
-            OrderItem::create([
-                'order_id'   => $order->id,
-                'product_id' => $product->id, // links to the variant
-                'quantity'   => $quantity,
-                'price'      => $product->price,
-                'subtotal'   => $subtotal,
-            ]);
+    // ✅ REDUCE STOCK
+    $product->stock -= $quantity;
+    $product->save();
 
-            $product->stock -= $quantity;
-            $product->save();
-
-            $total += $subtotal;
-        }
+    // ✅ ADD TOTAL
+    $total += $subtotal;
+}
 
         $order->total_amount = $total;
 

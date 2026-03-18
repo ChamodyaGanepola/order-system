@@ -53,11 +53,11 @@
                             <td>{{ $product->name }}</td>
                             <td>{{ $product->product_code }}</td>
                             <td>{{ $variant }}</td>
-                            <td>${{ number_format($item->price,2) }}</td>
+                            <td>Rs. {{ number_format($item->price,2) }}</td>
                             <td>
                                 <input type="number" name="products[{{ $item->product_id }}]" value="{{ $item->quantity }}" min="1">
                             </td>
-                            <td>${{ number_format($item->subtotal,2) }}</td>
+                            <td>Rs. {{ number_format($item->subtotal,2) }}</td>
                             <td><button type="button" class="btn btn-danger btn-sm remove-item">Remove</button></td>
                         </tr>
                     @endforeach
@@ -94,7 +94,7 @@
             {{ $disabled }}
         >
             {{ $product->name }} (Code: {{ $product->product_code }}, Variant: {{ $variant }})
-            - ${{ number_format($product->price,2) }}, Stock: {{ $product->stock }}
+            - Rs.{{ number_format($product->price,2) }}, Stock: {{ $product->stock }}
             @if($product->stock <= 0) - Out of Stock @endif
         </option>
     @endforeach
@@ -144,9 +144,9 @@ document.getElementById('add-product-btn').addEventListener('click', function() 
         <td>${productName}</td>
         <td>${productCode}</td>
         <td>${variant}</td>
-        <td>$${price.toFixed(2)}</td>
+        <td>Rs. ${price.toFixed(2)}</td>
         <td><input type="number" name="products[${productId}]" value="${quantity}" min="1"></td>
-        <td>$${(price*quantity).toFixed(2)}</td>
+        <td>Rs. ${(price*quantity).toFixed(2)}</td>
         <td><button type="button" class="btn btn-danger btn-sm remove-item">Remove</button></td>
     `;
     tbody.appendChild(row);

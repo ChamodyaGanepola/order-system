@@ -30,17 +30,24 @@
             <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
                 @if(in_array($order->status, ['pending', 'shipping']))
-                <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
-                    @if($order->status === 'pending')
-                        <option value="pending" selected>Pending</option>
-                        <option value="shipping">Shipping</option>
-                        <option value="rejected">Rejected</option>
-                    @elseif($order->status === 'shipping')
-                        <option value="shipping" selected>Shipping</option>
-                        <option value="completed">Completed</option>
-                        <option value="rejected">Rejected</option>
-                    @endif
-                </select>
+               <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
+
+    <!-- Current status (disabled, just for display) -->
+    <option value="{{ $order->status }}" selected disabled>
+        {{ ucfirst($order->status) }}
+    </option>
+
+    @if($order->status === 'pending')
+        <option value="shipping">Shipping</option>
+        <option value="rejected">Rejected</option>
+    @elseif($order->status === 'shipping')
+        <option value="completed">Completed</option>
+        <option value="rejected">Rejected</option>
+    @elseif($order->status === 'out_of_stock')
+        <option value="pending">Pending</option>
+    @endif
+
+</select>
                 @else
                     @php
                         $statusColors = [

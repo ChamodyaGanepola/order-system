@@ -54,7 +54,7 @@
                             data-price="{{ $product->price }}"
                             data-stock="{{ $product->stock }}"
                             {{ $product->stock <= 0 ? 'disabled' : '' }}>
-                        {{ $product->name }} ({{ $product->product_code }}) - Variant: {{ $product->other ?? 'N/A' }} (${{ number_format($product->price,2) }}) - Stock: {{ $product->stock }}
+                        {{ $product->name }} ({{ $product->product_code }}) - Variant: {{ $product->other ?? 'N/A' }} (Rs. {{ number_format($product->price,2) }}) - Stock: {{ $product->stock }}
                     </option>
                 @endforeach
             </select>
@@ -93,12 +93,12 @@ document.getElementById('add-product-btn').addEventListener('click', function() 
     const row = document.createElement('tr');
     row.setAttribute('data-product-id', productId);
     row.innerHTML = `
-        <td>${productName}</td>
-        <td>$${price.toFixed(2)}</td>
-        <td><input type="number" name="products[${productId}]" value="${quantity}" min="1" max="${stock}"></td>
-        <td>$${(price*quantity).toFixed(2)}</td>
-        <td><button type="button" class="btn btn-danger btn-sm remove-item">Remove</button></td>
-    `;
+    <td>${productName}</td>
+    <td>Rs. ${price.toFixed(2)}</td>
+    <td><input type="number" name="products[${productId}]" value="${quantity}" min="1" max="${stock}"></td>
+    <td>Rs. ${(price*quantity).toFixed(2)}</td>
+    <td><button type="button" class="btn btn-danger btn-sm remove-item">Remove</button></td>
+`;
     tbody.appendChild(row);
 
     select.value = '';
