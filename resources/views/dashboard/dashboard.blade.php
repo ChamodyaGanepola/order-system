@@ -75,7 +75,7 @@
         <div class="dashboard-card bg-secondary">
             <div class="card-content">
                 <div>
-                    <h6><i class="fas fa-shopping-cart"></i> Total Orders</h6>
+                    <h6><i class="fas fa-shopping-cart"></i> Total Orders(Without Out of Stock)</h6>
                     <h2>{{ $totalOrders }}</h2>
                 </div>
                 <i class="fas fa-shopping-cart fa-3x card-icon"></i>

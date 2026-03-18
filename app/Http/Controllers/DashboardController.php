@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $completedOrders  = Order::where('status', 'completed')->count();
         $rejectedOrders   = Order::where('status', 'rejected')->count();
         $outOfStockOrders = Order::where('status', 'out_of_stock')->count();
-        $totalOrders      = Order::count();
+        $totalOrders = Order::where('status', '!=', 'out_of_stock')->count();
         $totalRevenue     = Order::sum('total_amount');
 
         // Out-of-stock summary
