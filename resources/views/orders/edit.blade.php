@@ -30,14 +30,14 @@
                 @foreach($order->items as $item)
                 <tr data-product-id="{{ $item->product_id }}">
                     <td>{{ $item->product->name }} ({{ $item->product->product_code }}) - Variant: {{ $item->product->other ?? 'N/A' }}</td>
-                    <td>${{ number_format($item->price, 2) }}</td>
+                    <td>Rs. {{ number_format($item->price, 2) }}</td>
                     <td>
                         <input type="number" name="products[{{ $item->product_id }}]"
                                value="{{ $item->quantity }}"
                                min="1"
                                max="{{ $item->product->stock > 0 ? $item->product->stock : $item->quantity }}">
                     </td>
-                    <td>${{ number_format($item->subtotal, 2) }}</td>
+                    <td>Rs. {{ number_format($item->subtotal, 2) }}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
                     </td>

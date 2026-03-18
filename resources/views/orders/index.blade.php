@@ -67,7 +67,7 @@
             </td>
            <td>
     <div class="action-buttons" style="display:flex; gap:4px; justify-content:center;">
-        @if(in_array($order->status, ['pending', 'shipping', 'out_of_stock']))
+        @if(in_array($order->status, ['pending',  'out_of_stock']))
         <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm" title="Edit">
             <i class="fas fa-edit"></i>
         </a>
