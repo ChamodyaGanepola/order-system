@@ -9,7 +9,8 @@
 </div>
 
 <div class="content-box">
-    <form action="{{ route('orders.update', $order) }}" method="POST">
+    <form action="{{ route('orders.update', $order) }}" method="POST"
+         onsubmit="return confirm('Are you sure you want to edit this order? ');">
 @csrf
         @method('PUT')
 

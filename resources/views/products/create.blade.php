@@ -3,7 +3,8 @@
 @section('content')
 <div class="content-box" style="max-width: 500px; margin: 0 auto;">
     <h3>➕ Add Product Variant</h3>
-    <form action="{{ route('products.store') }}" method="POST">
+    <form action="{{ route('products.store') }}" method="POST"
+         onsubmit="return confirm('Are you sure you want to add this product variant? ');">
 @csrf
 
         <div class="form-group">

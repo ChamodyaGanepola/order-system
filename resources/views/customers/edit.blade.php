@@ -6,7 +6,8 @@
 </div>
 
 <div class="content-box" style="max-width: 600px;">
-    <form action="{{ route('customers.update', $customer->id) }}" method="POST">
+    <form action="{{ route('customers.update', $customer->id) }}" method="POST"
+        onsubmit="return confirm('Are you sure you want to update this customer? ');">
 @csrf
         @method('PUT')
 

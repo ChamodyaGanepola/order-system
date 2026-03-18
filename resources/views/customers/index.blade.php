@@ -19,10 +19,19 @@
 
         <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply</button>
     </form>
-
+ <div style="display:flex; gap:10px;">
     <a href="/customers/create" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;">
         <i class="fas fa-user"></i> <i class="fas fa-plus"></i> Add Customer
     </a>
+    <form action="{{ route('customers.destroyAll') }}" method="POST"
+              onsubmit="return confirm('Are you sure you want to delete ALL customers? This cannot be undone!');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger" style="display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-trash"></i> Delete All
+            </button>
+        </form>
+    </div>
 </div>
 @else
 <div class="content-box" style="text-align:center; padding:40px;">
@@ -74,7 +83,8 @@
                     <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px;">
                         <i class="fas fa-edit fa-sm"></i> Edit
                     </a>
-                    <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" style="display:inline;">
+                    <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" style="display:inline;"
+                     onsubmit="return confirm('Are you sure you want to delete this customer? ');">
 @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger btn-sm" style="display: flex; align-items: center; gap: 4px;">

@@ -39,10 +39,11 @@
             <td>{{ $product->stock }}</td>
             <td style="display: flex; gap: 6px;">
                 <a href="{{ route('products.edit', $product) }}" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Edit</a>
-                <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;">
+                <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;"
+                onsubmit="return confirm('Are you sure you want to delete this product variant? ');">
 @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')">
+                    <button type="submit" class="btn btn-danger btn-sm" >
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </form>

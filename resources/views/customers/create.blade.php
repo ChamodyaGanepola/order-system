@@ -6,7 +6,8 @@
 </div>
 
 <div class="content-box" style="max-width: 600px;">
-    <form action="/customers" method="POST">
+    <form action="/customers" method="POST"
+        onsubmit="return confirm('Are you sure you want to add this customer? ');">
     @csrf
 
         <div class="form-group">

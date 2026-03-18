@@ -10,7 +10,12 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
+
+            // Foreign key with cascade
+            $table->foreignId('customer_id')
+                  ->constrained('customers')
+                  ->onDelete('cascade');
+
             $table->decimal('total_amount', 10, 2)->default(0);
             $table->string('status')->default('pending');
             $table->string('waybill_number')->nullable();

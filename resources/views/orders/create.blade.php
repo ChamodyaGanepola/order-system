@@ -9,7 +9,8 @@
 </div>
 
 <div class="content-box">
-    <form action="{{ isset($order) ? route('orders.update', $order->id) : url('/orders') }}" method="POST">
+    <form action="{{ isset($order) ? route('orders.update', $order->id) : url('/orders') }}" method="POST"
+         onsubmit="return confirm('Are you sure you want to add this order? ');">
 @csrf
         @if(isset($order)) @method('PUT') @endif
         <input type="hidden" name="customer_id" value="{{ $customer->id }}">

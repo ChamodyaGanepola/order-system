@@ -9,13 +9,19 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    // Show form to create order for a customer
+    // Step 1: show all customers to select
+    public function selectCustomer()
+    {
+        $customers = Customer::all();
+        return view('orders.select_customer', compact('customers'));
+    }
+
+// Step 2: show create order form (existing)
     public function create(Customer $customer)
     {
         $products = Product::all();
         return view('orders.create', compact('customer', 'products'));
     }
-
     // Store order
     public function store(Request $request)
     {

@@ -3,41 +3,40 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerController extends Controller
 {
-   public function import(Request $request)
-{
-    $request->validate([
-        'file' => 'required|mimes:xlsx,xls,csv',
-    ]);
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv',
+        ]);
 
-    $import = new \App\Imports\Sheet1Import();
-    $import->importFile($request->file('file')); // Only imports first sheet
+        $import = new \App\Imports\Sheet1Import();
+        $import->importFile($request->file('file')); // Only imports first sheet
 
-    return redirect('/customers')->with('success', 'Customers imported!');
-}
-public function index(Request $request)
-{
-    $query = Customer::query();
-
-    // Search
-    if ($request->filled('search')) {
-        $query->where('full_name', 'like', '%' . $request->search . '%');
+        return redirect('/customers')->with('success', 'Customers imported!');
     }
+    public function index(Request $request)
+    {
+        $query = Customer::query();
 
-    // Sorting
-    $sort = $request->get('sort', 'asc'); // default A-Z
-    $query->orderBy('full_name', $sort);
+        // Search
+        if ($request->filled('search')) {
+            $query->where('full_name', 'like', '%' . $request->search . '%');
+        }
 
-    // Pagination: default 10, allow user to select
-    $perPage = $request->get('per_page', 10);
+                                              // Sorting
+        $sort = $request->get('sort', 'asc'); // default A-Z
+        $query->orderBy('full_name', $sort);
 
-    $customers = $query->paginate($perPage)->appends($request->all());
+        // Pagination: default 10, allow user to select
+        $perPage = $request->get('per_page', 10);
 
-    return view('customers.index', compact('customers', 'sort', 'perPage'));
-}
+        $customers = $query->paginate($perPage)->appends($request->all());
+
+        return view('customers.index', compact('customers', 'sort', 'perPage'));
+    }
     /*public function index()
     {
         $customers = Customer::all();
@@ -87,6 +86,12 @@ public function index(Request $request)
     {
         $customer->delete();
         return redirect('/customers')->with('success', 'Customer deleted successfully!');
+    }
+    public function destroyAll()
+    {
+        Customer::query()->delete(); // ✅ works safely
+
+        return redirect('/customers')->with('success', 'All customers deleted successfully!');
     }
 
 }

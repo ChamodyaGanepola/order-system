@@ -3,9 +3,9 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
     <h1><i class="fas fa-boxes"></i> Orders Management</h1>
-    <a href="/customers/create" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create Order
-    </a>
+   <a href="{{ route('orders.selectCustomer') }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Create Order
+</a>
 </div>
 
 @if($orders->count() > 0)

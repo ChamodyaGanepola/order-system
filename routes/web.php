@@ -27,12 +27,16 @@ Route::post('/customers/import', [CustomerController::class, 'import'])->name('c
 Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
 Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
 Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
-
+Route::delete('/customers-delete-all', [CustomerController::class, 'destroyAll'])
+    ->name('customers.destroyAll');
 
 
 // Orders
 Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-Route::get('/orders/create/{customer}', [OrderController::class, 'create']);
+// Step 1: Select customer
+Route::get('/orders/create', [OrderController::class, 'selectCustomer'])->name('orders.selectCustomer');
+// Step 2: Show create order page for a customer
+Route::get('/orders/create/{customer}', [OrderController::class, 'create'])->name('orders.create');
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/pending', [OrderController::class, 'pending']);
 Route::get('/orders/completed', [OrderController::class, 'completed']);
