@@ -34,47 +34,49 @@ class OrderController extends Controller
             'customer_id'  => $request->customer_id,
             'total_amount' => 0,
             'status'       => 'pending',
+            'pending_at'   => now(),
         ]);
 
-        $total = 0;
-$outOfStockProducts = [];
+        $total              = 0;
+        $outOfStockProducts = [];
 
-foreach ($request->products as $productId => $quantity) {
+        foreach ($request->products as $productId => $quantity) {
 
-    $product = Product::find($productId);
+            $product = Product::find($productId);
 
-    if (!$product || $quantity <= 0) {
-        continue;
-    }
+            if (! $product || $quantity <= 0) {
+                continue;
+            }
 
-    if ($product->stock < $quantity) {
-        $outOfStockProducts[] = "{$product->name} (Needed: $quantity, Available: $product->stock)";
-        continue;
-    }
+            if ($product->stock < $quantity) {
+                $outOfStockProducts[] = "{$product->name} (Needed: $quantity, Available: $product->stock)";
+                continue;
+            }
 
-    $subtotal = $product->price * $quantity;
+            $subtotal = $product->price * $quantity;
 
-    OrderItem::create([
-        'order_id'   => $order->id,
-        'product_id' => $product->id,
-        'quantity'   => $quantity,
-        'price'      => $product->price,
-        'subtotal'   => $subtotal,
-    ]);
+            OrderItem::create([
+                'order_id'   => $order->id,
+                'product_id' => $product->id,
+                'quantity'   => $quantity,
+                'price'      => $product->price,
+                'subtotal'   => $subtotal,
+            ]);
 
-    // ✅ REDUCE STOCK
-    $product->stock -= $quantity;
-    $product->save();
+            // ✅ REDUCE STOCK
+            $product->stock -= $quantity;
+            $product->save();
 
-    // ✅ ADD TOTAL
-    $total += $subtotal;
-}
+            // ✅ ADD TOTAL
+            $total += $subtotal;
+        }
 
         $order->total_amount = $total;
 
         // If any stock missing
         if (count($outOfStockProducts) > 0) {
-            $order->status = 'out_of_stock';
+            $order->status          = 'out_of_stock';
+            $order->out_of_stock_at = now();
             $order->save();
 
             $productList = implode(", ", $outOfStockProducts);
@@ -261,7 +263,32 @@ foreach ($request->products as $productId => $quantity) {
         }
 
         // Update order status
+        // Update order status
         $order->status = $status;
+
+// ✅ Set timestamp based on status
+        switch ($status) {
+            case 'pending':
+                $order->pending_at = now();
+                break;
+
+            case 'shipping':
+                $order->shipping_at = now();
+                break;
+
+            case 'completed':
+                $order->completed_at = now();
+                break;
+
+            case 'rejected':
+                $order->rejected_at = now();
+                break;
+
+            case 'out_of_stock':
+                $order->out_of_stock_at = now();
+                break;
+        }
+
         $order->save();
 
         return response()->json([

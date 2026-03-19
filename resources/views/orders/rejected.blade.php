@@ -13,6 +13,7 @@
             <th><i class="fas fa-user"></i> Customer</th>
             <th><i class="fas fa-money-bill-wave"></i> Total Amount</th>
             <th><i class="fas fa-tag"></i> Status</th>
+            <th><i class="fas fa-calendar-alt"></i> Status Date</th>
         </tr>
     </thead>
     <tbody>
@@ -25,6 +26,9 @@
                 <span style="background: #fee2e2; color: #7f1d1d; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                     <i class="fas fa-times-circle"></i> Rejected
                 </span>
+            </td>
+              <td>
+                {{ $order->status_date ? \Carbon\Carbon::parse($order->status_date)->timezone('Asia/Colombo')->format('d M Y H:i') : '-' }}
             </td>
         </tr>
         @endforeach

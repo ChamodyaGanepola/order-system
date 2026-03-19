@@ -113,9 +113,9 @@
             <p><strong>Delivery Service:</strong> {{ $order->delivery_service ?? 'N/A' }}</p>
             <p><strong>Waybill Number:</strong>
                 @if($order->waybill_number)
-                    <a href="https://portal.transexpress.lk/track/{{ $order->waybill_number }}" target="_blank">
+
                         {{ $order->waybill_number }}
-                    </a>
+
                 @else
                     N/A
                 @endif

@@ -28,7 +28,17 @@ class CustomerController extends Controller
 
                                               // Sorting
         $sort = $request->get('sort', 'asc'); // default A-Z
-        $query->orderBy('full_name', $sort);
+        $sort = $request->get('sort', 'latest');
+
+        if ($sort == 'latest') {
+            $query->orderBy('created_at', 'desc');
+        } elseif ($sort == 'oldest') {
+            $query->orderBy('created_at', 'asc');
+        } elseif ($sort == 'asc') {
+            $query->orderBy('full_name', 'asc');
+        } elseif ($sort == 'desc') {
+            $query->orderBy('full_name', 'desc');
+        }
 
         // Pagination: default 10, allow user to select
         $perPage = $request->get('per_page', 10);

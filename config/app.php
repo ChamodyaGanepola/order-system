@@ -65,8 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
-
+   'timezone' => 'Asia/Colombo',
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
@@ -159,7 +158,7 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
-  
+
     App\Providers\RouteServiceProvider::class,
     ]  //
 ];

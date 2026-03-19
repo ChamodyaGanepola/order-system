@@ -17,6 +17,7 @@
             <th>Customer Address</th>
             <th>Total Amount</th>
             <th>Status</th>
+            <th>Status Date</th>
             <th>Waybill Number</th>
             <th>Actions</th>
         </tr>
@@ -63,11 +64,13 @@
                     </span>
                 @endif
             </td>
+           <td>
+    {{ $order->status_date ? \Carbon\Carbon::parse($order->status_date)->format('d M Y H:i') : '-' }}
+</td>
+
             <td>
                 @if($order->waybill_number)
-                    <a href="https://portal.transexpress.lk/track/{{ $order->waybill_number }}" target="_blank">
                         {{ $order->waybill_number }}
-                    </a>
                 @else
                     -
                 @endif

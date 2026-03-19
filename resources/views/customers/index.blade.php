@@ -7,9 +7,11 @@
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name..." class="form-control">
 
         <select name="sort" onchange="this.form.submit()" class="form-control">
-            <option value="asc" {{ $sort == 'asc' ? 'selected' : '' }}>Name A → Z</option>
-            <option value="desc" {{ $sort == 'desc' ? 'selected' : '' }}>Name Z → A</option>
-        </select>
+    <option value="latest" {{ $sort == 'latest' ? 'selected' : '' }}>Newest First</option>
+    <option value="oldest" {{ $sort == 'oldest' ? 'selected' : '' }}>Oldest First</option>
+    <option value="asc" {{ $sort == 'asc' ? 'selected' : '' }}>Name A → Z</option>
+    <option value="desc" {{ $sort == 'desc' ? 'selected' : '' }}>Name Z → A</option>
+</select>
 
         <select name="per_page" onchange="this.form.submit()" class="form-control">
             @foreach([5, 10, 20, 50, 100] as $size)
@@ -67,6 +69,8 @@
                 <th><i class="fas fa-user"></i> Name</th>
                 <th><i class="fas fa-phone"></i> Phone</th>
                 <th><i class="fas fa-map-marker-alt"></i> Address</th>
+                <th><i class="fas fa-calendar"></i> Created Date</th>
+<th><i class="fas fa-calendar-day"></i> Day</th>
                 <th><i class="fas fa-cogs"></i> Actions</th>
             </tr>
         </thead>
@@ -76,6 +80,8 @@
                 <td>{{ $customer->full_name }}</td>
                 <td>{{ $customer->phone_number }}</td>
                 <td>{{ $customer->street_address }}</td>
+                <td>{{ $customer->created_at->format('Y-m-d H:i') }}</td>
+<td>{{ $customer->created_at->format('l') }}</td>
                 <td style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
                     <a href="/orders/create/{{ $customer->id }}" class="btn btn-success btn-sm" style="display: flex; align-items: center; gap: 4px;">
                         <i class="fas fa-shopping-cart fa-sm"></i> Order
