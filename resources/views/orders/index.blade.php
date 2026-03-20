@@ -13,6 +13,17 @@
     Ship Selected Pending Orders
 </button>
 
+<form method="GET" class="per-page-form">
+    <label for="per_page">Show</label>
+    <select name="per_page" id="per_page" onchange="this.form.submit()" class="form-control form-control-sm">
+        @foreach([5,10,20,50,100] as $size)
+            <option value="{{ $size }}" {{ $perPage == $size ? 'selected' : '' }}>{{ $size }}</option>
+        @endforeach
+    </select>
+    <span>orders per page</span>
+</form>
+
+
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -48,7 +59,7 @@
                 <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')" class="status-select">
                     <option value="{{ $order->status }}" selected disabled>{{ ucfirst($order->status) }}</option>
                     @if($order->status === 'pending')
-                      
+
                         <option value="rejected">Rejected</option>
                     @elseif($order->status === 'shipping')
                         <option value="completed">Completed</option>
@@ -94,7 +105,7 @@
 @if($orders->total() > 0)
 <div class="pagination-container" style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
     <div class="pagination-links">
-        {{ $orders->links('vendor.pagination.custom') }}
+        {{ $orders->appends(request()->query())->links('vendor.pagination.custom') }}
     </div>
     <div class="pagination-summary" style="font-size: 14px; color: #555;">
         Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} orders
@@ -301,6 +312,161 @@ function updateStatusApi(orderId, status){
 .pagination-links .page-item .page-link { padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.2s; }
 .pagination-links .page-item.active .page-link { background-color: #2563eb; color: white; border-color: #2563eb; }
 .pagination-links .page-item.disabled .page-link { color: #b0b0b0; cursor: not-allowed; }
+
+
+
+
+
+/* --- Status Select --- */
+.status-select {
+    min-width: 120px;
+    max-width: 160px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s;
+}
+.per-page-form {
+    display: flex;
+    gap: 8px;
+    align-items: center; /* centers label, select, and span vertically */
+}
+
+.per-page-form select.form-control {
+    width: auto; /* prevents select from taking full width */
+    min-width: 60px;
+}
+.status-select:focus {
+    outline: none;
+    border-color: #2563eb;
+}
+
+/* --- Action Buttons --- */
+.action-buttons a,
+.action-buttons button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* --- Bulk Ship Button --- */
+#bulk_ship_btn {
+    margin-bottom: 15px;
+}
+
+/* --- Pagination --- */
+.pagination-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-links .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pagination-links .page-item .page-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.pagination-links .page-item.active .page-link {
+    background-color: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+.pagination-links .page-item.disabled .page-link {
+    color: #b0b0b0;
+    cursor: not-allowed;
+}
+
+/* --- Per Page Form --- */
+form[method="GET"] {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+form[method="GET"] label {
+    font-weight: 500;
+}
+
+form[method="GET"] select {
+    min-width: 70px;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+/* --- Empty State --- */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.empty-state i {
+    color: #9ca3af;
+}
+
+/* --- Shipping Modal --- */
+#shipping-card {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 9999;
+    width: 100%;
+    max-width: 380px;
+}
+
+#overlay {
+    display: none;
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 9998;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .table th, .table td {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+    }
+
+    form[method="GET"] {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #shipping-card {
+        width: 90%;
+    }
+}
+
 @media (max-width: 768px) { .pagination-container { flex-direction: column; align-items: center; gap: 8px; } }
 </style>
 
