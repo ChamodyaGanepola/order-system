@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers;
-
+use App\Helpers\AddressHelper;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
@@ -53,44 +53,72 @@ class CustomerController extends Controller
         return view('customers.index', compact('customers'));
     }
 */
+
+
+public function store(Request $request)
+{
+    $request->validate([
+        'full_name'      => 'required',
+        'phone_number'   => 'required',
+        'street_address' => 'required',
+    ]);
+
+    $addressData = AddressHelper::parseAddress($request->street_address);
+
+    Customer::create([
+        'full_name'      => $request->full_name,
+        'phone_number'   => $request->phone_number,
+        'phone_number_2' => $request->phone_number_2 ?? null,
+        'street_address' => $addressData['street_address'],
+        'city'           => $addressData['city'],
+        'district'       => $addressData['district'],
+        'province'       => $addressData['province'],
+        'other'          => $request->other ?? null,
+        'product_code'   => $request->product_code ?? null,
+    ]);
+
+    return redirect('/customers')->with('success', 'Customer added!');
+}
+
+public function update(Request $request, Customer $customer)
+{
+    $request->validate([
+        'full_name'      => 'required',
+        'phone_number'   => 'required',
+        'street_address' => 'required',
+    ]);
+
+    $addressData = AddressHelper::parseAddress($request->street_address);
+
+$city = $request->city ?? $addressData['city'];
+$district = $request->district ?? $addressData['district'];
+$province = $request->province ?? $addressData['province'];
+
+$customer->update([
+    'full_name'      => $request->full_name,
+    'phone_number'   => $request->phone_number,
+    'phone_number_2' => $request->phone_number_2 ?? null,
+    'street_address' => $addressData['street_address'],
+    'city'           => $city,
+    'district'       => $district,
+    'province'       => $province,
+    'other'          => $request->other ?? null,
+    'product_code'   => $request->product_code ?? null,
+]);
+
+    return redirect('/customers')->with('success', 'Customer updated successfully!');
+}
     public function create()
     {
         return view('customers.create');
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'full_name'      => 'required',
-            'phone_number'   => 'required',
-            'street_address' => 'required',
-        ]);
-
-        Customer::create($request->all());
-
-        return redirect('/customers')->with('success', 'Customer added!');
-    }
 
     public function edit(Customer $customer)
     {
         return view('customers.edit', compact('customer'));
     }
 
-    public function update(Request $request, Customer $customer)
-    {
-        $request->validate([
-            'full_name'      => 'required',
-            'phone_number'   => 'required',
-            'street_address' => 'required',
-            'phone_number_2' => 'nullable',
-            'other'          => 'nullable',
-            'product_code'   => 'nullable',
-        ]);
-
-        $customer->update($request->all());
-
-        return redirect('/customers')->with('success', 'Customer updated successfully!');
-    }
 
     public function destroy(Customer $customer)
     {

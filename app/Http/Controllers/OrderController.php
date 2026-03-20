@@ -221,71 +221,80 @@ class OrderController extends Controller
         return view('orders.completed', compact('orders'));
     }
 
+public function bulkShip(Request $request)
+{
+    try {
+        // Get raw array directly from request body
+        $orders = $request->all();
+
+        if (!is_array($orders) || count($orders) === 0) {
+            return response()->json(['error' => 'Orders array is required'], 400);
+        }
+
+        // Call Transex helper
+        $response = \App\Helpers\TransexHelper::createBulkOrders($orders);
+
+        if (!is_array($response) || !isset($response['orders'])) {
+            throw new \Exception('Invalid response from Transex API');
+        }
+
+        foreach ($response['orders'] as $orderResponse) {
+            $orderId = $orderResponse['order_no'] ?? null; // map using your local order_no
+            if (!$orderId) continue;
+
+            $o = Order::where('id', $orderId)->first(); // or map however your local IDs match
+            if (!$o) continue;
+
+            $o->status = 'shipping';
+            $o->waybill_number = $orderResponse['waybill_id'] ?? null;
+            $o->shipping_at = now();
+            $o->save();
+        }
+
+        return response()->json(['success' => 'Bulk shipping completed']);
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
+    public function bulkDetails(Request $request)
+    {
+        $orders = Order::with('customer')->whereIn('id', $request->order_ids)->get();
+
+        $details = $orders->map(function ($order) {
+            return [
+                'order_id'          => $order->id,
+                'customer_name'     => $order->customer->full_name,
+                'street_address'           => $order->customer->street_address,
+                'order_description' => 'Order #' . $order->id,
+                'phone_number'    => $order->customer->phone_number,
+                'phone_number_2'   => $order->customer->phone_number_2 ?? '',
+                'total_amount'        => $order->total_amount,
+                'city'              => $order->customer->city ?? 864,
+                'remarks'           => $order->note ?? '',
+            ];
+        });
+
+        return response()->json($details);
+    }
     public function updateStatus(Request $request, $orderId)
     {
         $order           = Order::findOrFail($orderId);
         $status          = $request->input('status');
         $deliveryService = $request->input('delivery_service');
-        $city            = $request->input('city');
 
-        // Only update to shipping if waybill will be created
-        if ($status === 'shipping' && ! $order->waybill_number) {
-            try {
-                $weight = $request->input('weight', 1);
-                if ($deliveryService === 'transexpress') {
-                    // Transex API
-                    $apiData = \App\Helpers\TransexHelper::createOrder($order, $deliveryService, $city);
-
-                    if (isset($apiData['orders']['waybill_id'])) {
-                        $order->waybill_number   = $apiData['orders']['waybill_id'];
-                        $order->delivery_service = $deliveryService;
-                    } else {
-                        return response()->json(['error' => 'Transexpress did not return a waybill ID'], 400);
-                    }
-                } elseif ($deliveryService === 'domestic') {
-                    $city   = $request->input('city'); // <- get city from request
-                    $weight = $request->input('weight', 1);
-
-                    $apiData = \App\Helpers\FDEDomesticHelper::createOrder($order, $weight, 0, $city);
-
-                    if (isset($apiData['waybill_no'])) {
-                        $order->waybill_number   = $apiData['waybill_no'];
-                        $order->delivery_service = $deliveryService;
-                    } else {
-                        return response()->json(['error' => 'FDE Domestic did not return a waybill number'], 400);
-                    }
-                } else {
-                    return response()->json(['error' => 'Unknown delivery service'], 400);
-                }
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Could not sync with carrier: ' . $e->getMessage()], 500);
-            }
-        }
-
-        // Update order status
-        // Update order status
+        // Update order status only
         $order->status = $status;
-
-// ✅ Set timestamp based on status
         switch ($status) {
-            case 'pending':
-                $order->pending_at = now();
+            case 'pending':$order->pending_at = now();
                 break;
-
-            case 'shipping':
-                $order->shipping_at = now();
+            case 'shipping':$order->shipping_at = now();
                 break;
-
-            case 'completed':
-                $order->completed_at = now();
+            case 'completed':$order->completed_at = now();
                 break;
-
-            case 'rejected':
-                $order->rejected_at = now();
+            case 'rejected':$order->rejected_at = now();
                 break;
-
-            case 'out_of_stock':
-                $order->out_of_stock_at = now();
+            case 'out_of_stock':$order->out_of_stock_at = now();
                 break;
         }
 
@@ -294,8 +303,8 @@ class OrderController extends Controller
         return response()->json([
             'success'          => 'Order status updated successfully.',
             'order_id'         => $order->id,
-            'waybill_number'   => $order->waybill_number,
-            'delivery_service' => $order->delivery_service,
+            'waybill_number'   => $order->waybill_number ?? null,
+            'delivery_service' => $order->delivery_service ?? null,
         ]);
     }
 }

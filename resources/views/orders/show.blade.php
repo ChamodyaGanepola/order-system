@@ -21,6 +21,9 @@
         <div class="card-body">
             <p><strong>Name:</strong> {{ $order->customer->full_name }}</p>
             <p><strong>Address:</strong> {{ $order->customer->street_address }}</p>
+             <p><strong>City:</strong> {{ $order->customer->city ?? 'N/A' }}</p>
+            <p><strong>District:</strong> {{ $order->customer->district ?? 'N/A' }}</p>
+            <p><strong>Province:</strong> {{ $order->customer->province ?? 'N/A' }}</p>
             <p><strong>Phone:</strong> {{ $order->customer->phone_number }}</p>
             @if($order->customer->phone_number_2)
                 <p><strong>Phone 2:</strong> {{ $order->customer->phone_number_2 }}</p>

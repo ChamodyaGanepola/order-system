@@ -3,16 +3,25 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
     <h1><i class="fas fa-boxes"></i> Orders Management</h1>
-   <a href="{{ route('orders.selectCustomer') }}" class="btn btn-primary">
-    <i class="fas fa-plus"></i> Create Order
-</a>
+    <a href="{{ route('orders.selectCustomer') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create Order
+    </a>
 </div>
 
 @if($orders->count() > 0)
-<table>
+<button id="bulk_ship_btn" class="btn btn-success mb-3">
+    Ship Selected Orders (Tran Express)
+</button>
+
+<table class="table table-bordered">
     <thead>
         <tr>
-            <th>Order ID</th>
+           <th>
+    @if($orders->where('status', 'pending')->count() > 0)
+        <input type="checkbox" id="select_all">
+    @endif
+    Order ID
+</th>
             <th>Customer</th>
             <th>Customer Address</th>
             <th>Total Amount</th>
@@ -25,30 +34,29 @@
     <tbody>
         @foreach($orders as $order)
         <tr>
-            <td><strong>#{{ $order->id }}</strong></td>
+            <td>
+    @if($order->status === 'pending')
+        <input type="checkbox" class="order-checkbox" value="{{ $order->id }}">
+    @endif
+    <strong>#{{ $order->id }}</strong>
+</td>
             <td>{{ $order->customer->full_name }}</td>
-            <td>{{ $order->customer->street_address}}</td>
+            <td>{{ $order->customer->street_address }}</td>
             <td><strong>Rs.{{ number_format($order->total_amount, 2) }}</strong></td>
             <td>
                 @if(in_array($order->status, ['pending', 'shipping']))
-               <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')">
-
-    <!-- Current status (disabled, just for display) -->
-    <option value="{{ $order->status }}" selected disabled>
-        {{ ucfirst($order->status) }}
-    </option>
-
-    @if($order->status === 'pending')
-        <option value="shipping">Shipping</option>
-        <option value="rejected">Rejected</option>
-    @elseif($order->status === 'shipping')
-        <option value="completed">Completed</option>
-        <option value="rejected">Rejected</option>
-    @elseif($order->status === 'out_of_stock')
-        <option value="pending">Pending</option>
-    @endif
-
-</select>
+                <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')" class="status-select">
+                    <option value="{{ $order->status }}" selected disabled>{{ ucfirst($order->status) }}</option>
+                    @if($order->status === 'pending')
+                        <option value="shipping">Shipping</option>
+                        <option value="rejected">Rejected</option>
+                    @elseif($order->status === 'shipping')
+                        <option value="completed">Completed</option>
+                        <option value="rejected">Rejected</option>
+                    @elseif($order->status === 'out_of_stock')
+                        <option value="pending">Pending</option>
+                    @endif
+                </select>
                 @else
                     @php
                         $statusColors = [
@@ -64,29 +72,20 @@
                     </span>
                 @endif
             </td>
-           <td>
-    {{ $order->status_date ? \Carbon\Carbon::parse($order->status_date)->format('d M Y H:i') : '-' }}
-</td>
-
+            <td>{{ $order->status_date ? \Carbon\Carbon::parse($order->status_date)->format('d M Y H:i') : '-' }}</td>
+            <td>{{ $order->waybill_number ?? '-' }}</td>
             <td>
-                @if($order->waybill_number)
-                        {{ $order->waybill_number }}
-                @else
-                    -
-                @endif
+                <div class="action-buttons" style="display:flex; gap:4px; justify-content:center;">
+                    @if(in_array($order->status, ['pending',  'out_of_stock']))
+                    <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    @endif
+                    <a href="{{ route('orders.show', $order->id) }}" class="btn btn-primary btn-sm" title="View Order">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
             </td>
-           <td>
-    <div class="action-buttons" style="display:flex; gap:4px; justify-content:center;">
-        @if(in_array($order->status, ['pending',  'out_of_stock']))
-        <a href="{{ route('orders.edit', $order->id) }}" class="btn btn-secondary btn-sm" title="Edit">
-            <i class="fas fa-edit"></i>
-        </a>
-        @endif
-        <a href="{{ route('orders.show', $order->id) }}" class="btn btn-primary btn-sm" title="View Order">
-            <i class="fas fa-eye"></i>
-        </a>
-    </div>
-</td>
         </tr>
         @endforeach
     </tbody>
@@ -103,306 +102,177 @@
 </div>
 @endif
 
-<!-- Shipping Info Modal -->
+<!-- Shipping Modal -->
 <div id="shipping-card" style="display:none; position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%); background: white; padding: 20px;
     border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; width: 350px;">
+
     <h4>Shipping Details</h4>
     <form id="shipping-form">
+        <input type="hidden" id="selected_order_ids">
+
         <div class="form-group" style="margin-bottom:10px;">
-            <label for="delivery_service">Delivery Service</label>
+            <label for="delivery_service_input">Delivery Service</label>
             <select id="delivery_service_input" class="form-control">
-    <option value="transexpress" selected>Trans Express (Sri Lanka)</option>
-    <option value="domestic">Fadar Express / Domestic</option>
-</select>
+                <option value="transexpress" selected>Transexpress (Sri Lanka)</option>
+                <option value="domestic">Fadar Express / Domestic</option>
+            </select>
         </div>
 
-        <!-- Trans Express fields -->
-        <div id="transex_fields" style="display:none;">
-            <div class="form-group">
-                <label for="province">Province</label>
-                <select id="province_select" class="form-control">
-                    <option value="">Select Province</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="district">District</label>
-                <select id="district_select" class="form-control" disabled>
-                    <option value="">Select District</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="city">City</label>
-                <select id="city_select" class="form-control" disabled>
-                    <option value="">Select City</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Domestic fields -->
-        <div id="domestic_fields" style="display:none;">
-            <div class="form-group">
-                <label for="province_domestic">Province</label>
-                <select id="province_domestic" class="form-control">
-                    <option value="">Select Province</option>
-                    <option value="Western">Western</option>
-                    <option value="Central">Central</option>
-                    <option value="Southern">Southern</option>
-                    <option value="Northern">Northern</option>
-                    <option value="Eastern">Eastern</option>
-                    <option value="North Western">North Western</option>
-                    <option value="North Central">North Central</option>
-                    <option value="Uva">Uva</option>
-                    <option value="Sabaragamuwa">Sabaragamuwa</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="city_domestic">City</label>
-                <select id="city_domestic" class="form-control">
-    <option value="Colombo" selected>Colombo</option>
-    <option value="Kandy">Kandy</option>
-    <option value="Galle">Galle</option>
-    <option value="Jaffna">Jaffna</option>
-    <option value="Kurunegala">Kurunegala</option>
-    <option value="Anuradhapura">Anuradhapura</option>
-    <option value="Matale">Matale</option>
-    <option value="Matara">Matara</option>
-</select>
-            </div>
-        </div>
- <div class="form-group">
-        <label>Parcel Weight (kg)</label>
-        <input type="number" id="parcel_weight" class="form-control" value="1" min="1">
-    </div>
-        <div style="display:flex; justify-content: flex-end; gap:10px;">
+        <div style="display:flex; justify-content: flex-end; gap:10px; margin-top: 10px;">
             <button type="button" class="btn btn-secondary" onclick="closeShippingCard()">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitShipping()">Submit</button>
+            <button type="button" id="submitSingleBtn" class="btn btn-primary" onclick="submitShippingSingle()">Submit</button>
+            <button type="button" id="submitBulkBtn" class="btn btn-primary" onclick="submitShippingBulk()">Submit Bulk</button>
         </div>
     </form>
 </div>
 
-<!-- Overlay -->
 <div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
     background: rgba(0,0,0,0.5); z-index: 9998;"></div>
 
 <script>
+    const selectAll = document.getElementById('select_all');
+if (selectAll) {
+    selectAll.addEventListener('change', function() {
+        const checked = this.checked;
+        document.querySelectorAll('.order-checkbox').forEach(cb => {
+            // only enable pending checkboxes
+            if (!cb.disabled) cb.checked = checked;
+        });
+    });
+}
 let currentOrderId = null;
 
-function handleStatusChange(select, orderId) {
-    const status = select.value;
+document.addEventListener('DOMContentLoaded', function() {
+    // Bulk Ship Button
+    const bulkShipBtn = document.getElementById('bulk_ship_btn');
+    if(bulkShipBtn){
+        bulkShipBtn.addEventListener('click', function() {
+            const selected = Array.from(document.querySelectorAll('.order-checkbox:checked')).map(cb => cb.value);
+            if(selected.length === 0){ alert('Select at least one order'); return; }
 
-    if (status !== 'shipping') {
-        // Update immediately if not shipping
-        updateStatusApi(orderId, status, '', '');
-        return;
+            currentOrderId = null;
+            document.getElementById('selected_order_ids').value = selected.join(',');
+            document.getElementById('shipping-card').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+
+            document.getElementById('submitBulkBtn').style.display = 'block';
+            document.getElementById('submitSingleBtn').style.display = 'none';
+        });
     }
 
-    // If shipping, just open modal
-    currentOrderId = orderId;
-    document.getElementById('shipping-card').style.display = 'block';
-    document.getElementById('overlay').style.display = 'block';
-}
+    // Select all checkboxes
+    const selectAll = document.getElementById('select_all');
+    if(selectAll){
+        selectAll.addEventListener('change', function() {
+            const checked = this.checked;
+            document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = checked);
+        });
+    }
+});
 
 function closeShippingCard() {
     document.getElementById('shipping-card').style.display = 'none';
     document.getElementById('overlay').style.display = 'none';
-
-    // Reset the dropdown to pending if modal closed without submitting
-    if (currentOrderId) {
-        const select = document.querySelector(`select[name="status"][onchange*="${currentOrderId}"]`);
-        if(select) select.value = 'pending';
-        currentOrderId = null;
-    }
+    currentOrderId = null;
 }
 
-function submitShipping() {
+function handleStatusChange(select, orderId) {
+    const status = select.value;
+    if(status !== 'shipping'){ updateStatusApi(orderId, status); return; }
+
+    currentOrderId = orderId;
+    document.getElementById('shipping-card').style.display = 'block';
+    document.getElementById('overlay').style.display = 'block';
+
+    document.getElementById('submitSingleBtn').style.display = 'block';
+    document.getElementById('submitBulkBtn').style.display = 'none';
+}
+
+function submitShippingSingle() {
+    if(!currentOrderId) return;
+
     const deliveryService = document.getElementById('delivery_service_input').value;
-
-    const city = deliveryService === 'transexpress'
-        ? document.getElementById('city_select').value
-        : document.getElementById('city_domestic').value;
-
-    const weight = document.getElementById('parcel_weight').value || 1;
-
-    if (!deliveryService) {
-        alert('Select delivery service');
-        return;
-    }
-
-    if (!city) {
-        alert('Select a city');
-        return;
-    }
-
-    const data = {
-        status: 'shipping',
-        delivery_service: deliveryService,
-        city: city,
-        weight: weight
-    };
-
-    console.log("Sending order ID:", currentOrderId);
-
     fetch('/api/orders/' + currentOrderId + '/update-status', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(data)
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({status:'shipping', delivery_service: deliveryService})
     })
     .then(res => res.json())
-    .then(data => {
-        console.log(data);
-
-        if (data.success) {
-            alert(data.success);
-            location.reload();
-        } else if (data.error) {
-            alert(data.error);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert('Failed to update status.');
-    });
+    .then(data => { if(data.success){ alert(data.success); location.reload(); } else if(data.error) alert(data.error); })
+    .catch(err => { console.error(err); alert('Failed to update status'); });
 
     closeShippingCard();
 }
-// API call
-function updateStatusApi(orderId,status,deliveryService,city){
-    fetch('/api/orders/'+orderId+'/update-status',{
+
+function submitShippingBulk() {
+    const selected = document.getElementById('selected_order_ids').value
+        .split(',')
+        .map(id => parseInt(id));
+
+    if (selected.length === 0) {
+        alert('Select at least one order');
+        return;
+    }
+
+    // Step 1: Fetch order details from backend
+    fetch('/api/orders/bulk-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ order_ids: selected })
+    })
+    .then(res => res.json())
+    .then(orders => {
+
+        // Step 2: Map orders to exact Transex format
+        const payload = orders.map(o => ({
+            order_id: o.order_id,
+            customer_name: o.customer_name,
+            address: o.street_address,
+            order_description: o.order_description, // use existing
+            customer_phone: o.phone_number,
+            customer_phone2: o.phone_number_2 ?? '',
+            cod_amount: o.total_amount,
+            city: o.city,
+            remarks: o.remarks ?? ''
+        }));
+
+        // Step 3: Send raw array directly (no wrapper)
+        fetch('/api/orders/bulk-ship', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload) // ✅ raw array
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.success);
+                location.reload();
+            } else if (data.error) {
+                alert(data.error);
+            }
+        })
+        .catch(err => { console.error(err); alert('Bulk shipping failed'); });
+    })
+    .catch(err => { console.error(err); alert('Failed to fetch order details'); });
+
+    closeShippingCard();
+}
+
+function updateStatusApi(orderId, status){
+    fetch('/api/orders/' + orderId + '/update-status', {
         method:'POST',
         headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body: JSON.stringify({status, delivery_service: deliveryService, city})
-    }).then(res=>res.json()).then(data=>{
-        if(data.success){ alert(data.success); location.reload(); }
-        else if(data.error) alert(data.error);
-    }).catch(err=>{ console.error(err); alert('Failed to update status.'); });
+        body: JSON.stringify({status})
+    })
+    .then(res=>res.json())
+    .then(data => { if(data.success){ alert(data.success); location.reload(); } else if(data.error) alert(data.error); })
+    .catch(err=>{ console.error(err); alert('Failed to update status.'); });
 }
-
-// Delivery service selection
-// Show/hide fields on page load based on default selected value
-window.addEventListener('DOMContentLoaded', () => {
-    const val = document.getElementById('delivery_service_input').value;
-    document.getElementById('transex_fields').style.display = val==='transexpress' ? 'block' : 'none';
-    document.getElementById('domestic_fields').style.display = val==='domestic' ? 'block' : 'none';
-
-    // Show/hide weight field
-    document.getElementById('parcel_weight').parentElement.style.display = val==='domestic' ? 'block' : 'none';
-
-    if(val==='transexpress') loadTransexProvinces();
-});
-
-document.getElementById('delivery_service_input').addEventListener('change', function() {
-    const val = this.value;
-    document.getElementById('transex_fields').style.display = val==='transexpress' ? 'block' : 'none';
-    document.getElementById('domestic_fields').style.display = val==='domestic' ? 'block' : 'none';
-    document.getElementById('parcel_weight').parentElement.style.display = val==='domestic' ? 'block' : 'none';
-});
-// Trans Express provinces/districts
-function loadTransexProvinces(){
-    const provinceSelect = document.getElementById('province_select');
-    const districtSelect = document.getElementById('district_select');
-    const citySelect = document.getElementById('city_select');
-
-    // Clear previous options
-    provinceSelect.innerHTML = '';
-    districtSelect.innerHTML = '';
-    citySelect.innerHTML = '';
-    districtSelect.disabled = true;
-    citySelect.disabled = true;
-
-    // Fetch provinces
-    fetch('https://portal.transexpress.lk/api/provinces', { headers: { 'Accept':'application/json' } })
-    .then(res => res.json())
-    .then(provinces => {
-        provinces.forEach((p,i) => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.text;
-            provinceSelect.appendChild(opt);
-        });
-        // Auto-select first province
-        provinceSelect.selectedIndex = 0;
-        loadDistricts(provinceSelect.value);
-    });
-
-    // Province change
-    provinceSelect.addEventListener('change', ()=>loadDistricts(provinceSelect.value));
-
-    function loadDistricts(provinceId){
-        districtSelect.innerHTML = '';
-        citySelect.innerHTML = '';
-        districtSelect.disabled = true;
-        citySelect.disabled = true;
-        if(!provinceId) return;
-
-        fetch(`https://portal.transexpress.lk/api/districts?province_id=${provinceId}`, { headers:{'Accept':'application/json'} })
-        .then(res=>res.json())
-        .then(districts=>{
-            districts.forEach(d=>{
-                const opt = document.createElement('option');
-                opt.value = d.id;
-                opt.textContent = d.text;
-                districtSelect.appendChild(opt);
-            });
-            // Auto-select first district
-            districtSelect.selectedIndex = 0;
-            loadCities(districtSelect.value);
-            districtSelect.disabled = false;
-        });
-    }
-
-    // District change
-    districtSelect.addEventListener('change', ()=>loadCities(districtSelect.value));
-
-    function loadCities(districtId){
-        citySelect.innerHTML = '';
-        citySelect.disabled = true;
-        if(!districtId) return;
-
-        fetch(`https://portal.transexpress.lk/api/cities?district_id=${districtId}`, { headers:{'Accept':'application/json'} })
-        .then(res=>res.json())
-        .then(cities=>{
-            cities.forEach(c=>{
-                const opt = document.createElement('option');
-                opt.value = c.text;
-                opt.textContent = c.text;
-                citySelect.appendChild(opt);
-            });
-            // Auto-select first city
-            if(cities.length>0) citySelect.selectedIndex = 0;
-            citySelect.disabled = false;
-        });
-    }
-}
-
-
-
 </script>
 
 <style>
-/* Make status dropdown fit the table cell */
-td select[name="status"] {
-    width: 100%;        /* take full width of the cell */
-    max-width: 120px;   /* optional: prevent too wide */
-    padding: 2px 6px;
-    font-size: 13px;
-    border-radius: 4px;
-}
-
-td.status-column select {
-    min-width: 120px;
-}
-/* Apply only once */
-.status-select {
-    min-width: 120px;   /* enough for 'Pending', 'Shipping', etc. */
-    max-width: 150px;   /* optional: prevent huge stretch */
-    padding: 2px 6px;
-    font-size: 0.85rem; /* readable font */
-    border-radius: 4px;
-}
+.status-select { min-width: 120px; max-width: 150px; padding: 2px 6px; font-size: 0.85rem; border-radius: 4px; }
 .pagination-links .pagination { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pagination-links .page-item .page-link { padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; color: #1e293b; transition: all 0.2s; }
 .pagination-links .page-item.active .page-link { background-color: #2563eb; color: white; border-color: #2563eb; }
@@ -411,8 +281,8 @@ td.status-column select {
 </style>
 
 @else
-<div class="empty-state">
-    <i class="fas fa-boxes"></i>
+<div class="empty-state text-center">
+    <i class="fas fa-boxes" style="font-size:48px"></i>
     <h3>No Orders Found</h3>
     <p>Create your first order by selecting a customer</p>
 </div>

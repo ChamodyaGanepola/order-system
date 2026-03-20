@@ -10,9 +10,10 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Facades\Excel;
-
+   use App\Helpers\AddressHelper;
 class Sheet1Import implements ToModel, WithHeadingRow, WithCalculatedFormulas
 {
+
     public function importFile($file)
     {
         Excel::import($this, $file, null, \Maatwebsite\Excel\Excel::XLSX, [
@@ -44,16 +45,23 @@ class Sheet1Import implements ToModel, WithHeadingRow, WithCalculatedFormulas
         $phone = $this->formatPhone($row['phone_number']);
 
         // Create or get customer
-        $customer = Customer::firstOrCreate(
-            [
-                'full_name'      => $row['full_name'],
-                'street_address' => $row['street_address'],
-                'phone_number'   => $phone,
-            ],
-            [
-                'phone_number_2' => isset($row['phone_number_2']) ? $this->formatPhone($row['phone_number_2']) : null,
-            ]
-        );
+
+
+$addressData = AddressHelper::parseAddress($row['street_address']);
+
+$customer = Customer::firstOrCreate(
+    [
+        'full_name'      => $row['full_name'],
+        'street_address' => $row['street_address'],
+        'phone_number'   => $phone,
+    ],
+    [
+        'phone_number_2' => isset($row['phone_number_2']) ? $this->formatPhone($row['phone_number_2']) : null,
+        'city'           => $addressData['city'],
+        'district'       => $addressData['district'],
+        'province'       => $addressData['province'],
+    ]
+);
 
         // Get variant
         $variant = isset($row['other']) ? trim(strtolower($row['other'])) : 'n/a';
