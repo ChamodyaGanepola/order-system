@@ -10,7 +10,7 @@
 
 @if($orders->count() > 0)
 <button id="bulk_ship_btn" class="btn btn-success mb-3">
-    Ship Selected Orders (Tran Express)
+    Ship Selected Pending Orders
 </button>
 
 <table class="table table-bordered">
@@ -48,7 +48,7 @@
                 <select name="status" onchange="handleStatusChange(this, '{{ $order->id }}')" class="status-select">
                     <option value="{{ $order->status }}" selected disabled>{{ ucfirst($order->status) }}</option>
                     @if($order->status === 'pending')
-                        <option value="shipping">Shipping</option>
+                      
                         <option value="rejected">Rejected</option>
                     @elseif($order->status === 'shipping')
                         <option value="completed">Completed</option>
@@ -206,6 +206,7 @@ function submitShippingSingle() {
 }
 
 function submitShippingBulk() {
+    console.log('Submitting bulk shipping');
     const selected = document.getElementById('selected_order_ids').value
         .split(',')
         .map(id => parseInt(id));
@@ -215,46 +216,69 @@ function submitShippingBulk() {
         return;
     }
 
-    // Step 1: Fetch order details from backend
-    fetch('/api/orders/bulk-details', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ order_ids: selected })
-    })
-    .then(res => res.json())
-    .then(orders => {
+    const deliveryService = document.getElementById('delivery_service_input').value;
 
-        // Step 2: Map orders to exact Transex format
-        const payload = orders.map(o => ({
-            order_id: o.order_id,
-            customer_name: o.customer_name,
-            address: o.street_address,
-            order_description: o.order_description, // use existing
-            customer_phone: o.phone_number,
-            customer_phone2: o.phone_number_2 ?? '',
-            cod_amount: o.total_amount,
-            city: o.city,
-            remarks: o.remarks ?? ''
-        }));
-
-        // Step 3: Send raw array directly (no wrapper)
-        fetch('/api/orders/bulk-ship', {
+    if (deliveryService === 'transexpress') {
+        // Transexpress bulk logic (already implemented)
+        fetch('/api/orders/bulk-details', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload) // ✅ raw array
+            body: JSON.stringify({ order_ids: selected })
+        })
+        .then(res => res.json())
+        .then(orders => {
+            const payload = orders.map(o => ({
+                order_id: o.order_id,
+                customer_name: o.customer_name,
+                address: o.street_address,
+                order_description: o.order_description,
+                customer_phone: o.phone_number,
+                customer_phone2: o.phone_number_2 ?? '',
+                cod_amount: o.total_amount,
+                city: o.city,
+                remarks: o.remarks ?? '',
+                delivery_service: deliveryService
+            }));
+
+            fetch('/api/orders/bulk-ship', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.success);
+                    location.reload();
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(err => { console.error(err); alert('Bulk shipping failed'); });
+        })
+        .catch(err => { console.error(err); alert('Failed to fetch order details'); });
+
+    } else if (deliveryService === 'domestic') {
+        // FDE Domestic: send single orders to backend
+        fetch('/api/orders/bulk-ship-fde', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(selected.map(id => ({ order_id: id }))) // just array of order IDs
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                alert(data.success);
+            if (data.results) {
+                let successCount = data.results.filter(r => r.success).length;
+                let failed = data.results.filter(r => !r.success);
+                alert(`${successCount} orders shipped successfully.` +
+                    (failed.length > 0 ? ` Failed: ${failed.map(f => `#${f.order_id}`).join(', ')}` : ''));
                 location.reload();
             } else if (data.error) {
                 alert(data.error);
             }
         })
-        .catch(err => { console.error(err); alert('Bulk shipping failed'); });
-    })
-    .catch(err => { console.error(err); alert('Failed to fetch order details'); });
+        .catch(err => { console.error(err); alert('FDE Domestic bulk shipping failed'); });
+    }
 
     closeShippingCard();
 }

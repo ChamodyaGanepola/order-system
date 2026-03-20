@@ -224,14 +224,12 @@ class OrderController extends Controller
 public function bulkShip(Request $request)
 {
     try {
-        // Get raw array directly from request body
-        $orders = $request->all();
+        $orders = $request->all(); // raw array
 
         if (!is_array($orders) || count($orders) === 0) {
             return response()->json(['error' => 'Orders array is required'], 400);
         }
 
-        // Call Transex helper
         $response = \App\Helpers\TransexHelper::createBulkOrders($orders);
 
         if (!is_array($response) || !isset($response['orders'])) {
@@ -239,20 +237,20 @@ public function bulkShip(Request $request)
         }
 
         foreach ($response['orders'] as $orderResponse) {
-            $orderId = $orderResponse['order_no'] ?? null; // map using your local order_no
+            $orderId = $orderResponse['order_no'] ?? null;
             if (!$orderId) continue;
 
-            $o = Order::where('id', $orderId)->first(); // or map however your local IDs match
+            $o = Order::where('id', $orderId)->first();
             if (!$o) continue;
 
-            $o->status = 'shipping';
-            $o->waybill_number = $orderResponse['waybill_id'] ?? null;
-            $o->shipping_at = now();
+            $o->status           = 'shipping';
+            $o->waybill_number   = $orderResponse['waybill_id'] ?? null;
+            $o->delivery_service = $orderResponse['delivery_service'] ?? ($orders[array_search($orderId, array_column($orders, 'order_id'))]['delivery_service'] ?? null); // ✅
+            $o->shipping_at      = now();
             $o->save();
         }
 
         return response()->json(['success' => 'Bulk shipping completed']);
-
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
@@ -307,4 +305,45 @@ public function bulkShip(Request $request)
             'delivery_service' => $order->delivery_service ?? null,
         ]);
     }
+    public function bulkShipFDE(Request $request)
+{
+    $ordersData = $request->all(); // array of orders from frontend
+    $results = [];
+
+    foreach ($ordersData as $orderData) {
+        try {
+            $order = Order::findOrFail($orderData['order_id']);
+
+            // Call FDE Domestic helper
+            $response = \App\Helpers\FDEDomesticHelper::createOrder(
+                $order,
+                $parcelWeight = 1, 
+                $exchange = 0,
+                $city = $orderData['city'] ?? $order->customer->city
+            );
+
+            // Save order details
+            $order->status           = 'shipping';
+            $order->delivery_service = 'domestic';
+            $order->waybill_number   = $response['waybill_no'] ?? null;
+            $order->shipping_at      = now();
+            $order->save();
+
+            $results[] = [
+                'order_id' => $order->id,
+                'success'  => true,
+                'waybill'  => $order->waybill_number,
+            ];
+
+        } catch (\Exception $e) {
+            $results[] = [
+                'order_id' => $orderData['order_id'],
+                'success'  => false,
+                'error'    => $e->getMessage(),
+            ];
+        }
+    }
+
+    return response()->json(['results' => $results]);
+}
 }
