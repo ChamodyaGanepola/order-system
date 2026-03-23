@@ -19,6 +19,8 @@ class Customer extends Model
     'city',
     'district',
     'province',
+     'row_order',
+      'import_batch',
 ];
     public function orders()
 {

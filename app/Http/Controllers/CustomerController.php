@@ -42,8 +42,12 @@ class CustomerController extends Controller
 
         // Pagination: default 10, allow user to select
         $perPage = $request->get('per_page', 10);
+$customers = Customer::orderBy('import_batch', 'desc') // latest Excel first
+                     ->orderBy('row_order', 'asc')    // rows in same Excel
+                     ->with('orders')
+                     ->paginate($perPage)
+                     ->appends($request->all());
 
-        $customers = $query->with('orders')->paginate($perPage)->appends($request->all());
 
         return view('customers.index', compact('customers', 'sort', 'perPage'));
     }
