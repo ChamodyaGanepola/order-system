@@ -69,6 +69,8 @@
                 <th><i class="fas fa-user"></i> Name</th>
                 <th><i class="fas fa-phone"></i> Phone</th>
                 <th><i class="fas fa-map-marker-alt"></i> Address</th>
+                <th>Product Code</th>
+<th>Order Status</th>
                 <th><i class="fas fa-calendar"></i> Created Date</th>
 <th><i class="fas fa-calendar-day"></i> Day</th>
                 <th><i class="fas fa-cogs"></i> Actions</th>
@@ -80,6 +82,29 @@
                 <td>{{ $customer->full_name }}</td>
                 <td>{{ $customer->phone_number }}</td>
                 <td>{{ $customer->street_address }}</td>
+                <td>{{ $customer->product_code ?? '-' }}</td>
+
+<td>
+    @if($customer->orders->count())
+        @foreach($customer->orders as $order)
+            <div>
+                {{ $customer->product_code ?? 'N/A' }} :
+                <span style="font-weight:600; color:
+                    @if($order->status == 'pending') orange
+                    @elseif($order->status == 'shipping') blue
+                    @elseif($order->status == 'completed') green
+                    @elseif($order->status == 'rejected') red
+                    @elseif($order->status == 'out_of_stock') gray
+                    @endif
+                ">
+                    {{ ucfirst($order->status) }}
+                </span>
+            </div>
+        @endforeach
+    @else
+        -
+    @endif
+</td>
                 <td>{{ $customer->created_at->format('Y-m-d H:i') }}</td>
 <td>{{ $customer->created_at->format('l') }}</td>
                 <td style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">

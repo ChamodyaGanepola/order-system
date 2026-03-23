@@ -60,6 +60,8 @@ $customer = Customer::firstOrCreate(
         'city'           => $addressData['city'],
         'district'       => $addressData['district'],
         'province'       => $addressData['province'],
+          'product_code'   => $row['product_code'] ?? null,
+        'other'          => $row['other'] ?? null,
     ]
 );
 

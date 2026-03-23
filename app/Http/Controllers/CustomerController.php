@@ -43,7 +43,7 @@ class CustomerController extends Controller
         // Pagination: default 10, allow user to select
         $perPage = $request->get('per_page', 10);
 
-        $customers = $query->paginate($perPage)->appends($request->all());
+        $customers = $query->with('orders')->paginate($perPage)->appends($request->all());
 
         return view('customers.index', compact('customers', 'sort', 'perPage'));
     }
