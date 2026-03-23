@@ -4,14 +4,8 @@
 @if($customers->total() > 0)
 <div class="content-toolbar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 20px;">
     <form method="GET" class="customer-search-form" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name..." class="form-control">
 
-        <select name="sort" onchange="this.form.submit()" class="form-control">
-    <option value="latest" {{ $sort == 'latest' ? 'selected' : '' }}>Newest First</option>
-    <option value="oldest" {{ $sort == 'oldest' ? 'selected' : '' }}>Oldest First</option>
-    <option value="asc" {{ $sort == 'asc' ? 'selected' : '' }}>Name A → Z</option>
-    <option value="desc" {{ $sort == 'desc' ? 'selected' : '' }}>Name Z → A</option>
-</select>
+
 
         <select name="per_page" onchange="this.form.submit()" class="form-control">
             @foreach([5, 10, 20, 50, 100] as $size)
@@ -19,7 +13,7 @@
             @endforeach
         </select>
 
-        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply</button>
+
     </form>
  <div style="display:flex; gap:10px;">
     <a href="/customers/create" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;">
@@ -82,13 +76,27 @@
                 <td>{{ $customer->full_name }}</td>
                 <td>{{ $customer->phone_number }}</td>
                 <td>{{ $customer->street_address }}</td>
-                <td>{{ $customer->product_code ?? '-' }}</td>
-
 <td>
-    @if($customer->orders->count())
-        @foreach($customer->orders as $order)
+    @php
+        $codes = [];
+        if ($customer->product_code) {
+            $codes[] = $customer->product_code;
+        }
+        if ($customer->unknown_product_code) {
+            $codes[] = '<span style="color:red; font-weight:bold;">' . $customer->unknown_product_code . ' (unknown)</span>';
+        }
+    @endphp
+
+    {!! implode('<br>', $codes) !!}
+</td>
+<td>
+
+   @if($customer->orders->count())
+    @foreach($customer->orders as $order)
+        @foreach($order->items as $item)
             <div>
-                {{ $customer->product_code ?? 'N/A' }} :
+                {{ $item->product->product_code ?? 'N/A' }}
+                <strong>x{{ $item->quantity }}</strong> :
                 <span style="font-weight:600; color:
                     @if($order->status == 'pending') orange
                     @elseif($order->status == 'shipping') blue
@@ -101,9 +109,10 @@
                 </span>
             </div>
         @endforeach
-    @else
-        -
-    @endif
+    @endforeach
+@else
+    -
+@endif
 </td>
                 <td>{{ $customer->created_at->format('Y-m-d H:i') }}</td>
 <td>{{ $customer->created_at->format('l') }}</td>

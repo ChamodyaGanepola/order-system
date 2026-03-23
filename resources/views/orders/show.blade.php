@@ -40,7 +40,8 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Product</th>
+                        <th>Product Code</th>
+                         <th>Product name</th>
                         <th>Specifications</th>
                         <th>Price</th>
                         <th>Quantity</th>
@@ -50,7 +51,8 @@
                 <tbody>
                     @foreach($order->items as $item)
                     <tr>
-                        <td>{{ $item->product->name }}</td>
+                        <td>{{ $item->product->product_code }}</td>
+                         <td>{{ $item->product->name }}</td>
                         <td>
                             @php
                                 $specs = $item->product->other;

@@ -16,6 +16,7 @@ class Customer extends Model
     'phone_number_2',
     'other',
     'product_code',
+    'unknown_product_code',
     'city',
     'district',
     'province',

@@ -83,7 +83,13 @@ public function store(Request $request)
 
     return redirect('/customers')->with('success', 'Customer added!');
 }
+public function deleteUnknown(Customer $customer)
+{
+    $customer->unknown_product_code = null;
+    $customer->save();
 
+    return redirect()->back()->with('success', 'Unknown product code deleted.');
+}
 public function update(Request $request, Customer $customer)
 {
     $request->validate([
@@ -108,6 +114,7 @@ $customer->update([
     'province'       => $province,
     'other'          => $request->other ?? null,
     'product_code'   => $request->product_code ?? null,
+    'unknown_product_code' => $request->unknown_product_code,
 ]);
 
     return redirect('/customers')->with('success', 'Customer updated successfully!');

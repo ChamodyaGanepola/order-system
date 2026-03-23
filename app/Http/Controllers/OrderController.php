@@ -3,7 +3,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -29,63 +28,69 @@ class OrderController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'products'    => 'required|array', // array of ['product_code' => ..., 'other' => [...], 'quantity' => ...]
         ]);
+        $customer = Customer::findOrFail($request->customer_id);
+        $order    = Order::firstOrCreate(
+            ['customer_id' => $request->customer_id, 'status' => 'pending'],
+            ['total_amount' => 0, 'pending_at' => now()]
+        );
 
-        $order = Order::create([
-            'customer_id'  => $request->customer_id,
-            'total_amount' => 0,
-            'status'       => 'pending',
-            'pending_at'   => now(),
-        ]);
+        $total = $order->items()->sum('subtotal'); // start with existing total
 
-        $total              = 0;
         $outOfStockProducts = [];
 
         foreach ($request->products as $productId => $quantity) {
 
             $product = Product::find($productId);
 
-            if (! $product || $quantity <= 0) {
-                continue;
-            }
-
-            if ($product->stock < $quantity) {
-                $outOfStockProducts[] = "{$product->name} (Needed: $quantity, Available: $product->stock)";
-                continue;
-            }
-
-            $subtotal = $product->price * $quantity;
-
-            OrderItem::create([
-                'order_id'   => $order->id,
-                'product_id' => $product->id,
-                'quantity'   => $quantity,
-                'price'      => $product->price,
-                'subtotal'   => $subtotal,
-            ]);
-
-            // ✅ REDUCE STOCK
-            $product->stock -= $quantity;
-            $product->save();
-
-            // ✅ ADD TOTAL
-            $total += $subtotal;
+             if (!$product || $quantity <= 0) {
+            // Product not found → treat as unknown
+            $unknownProductCodes[] = "ID:$productId";
+            continue;
         }
 
+            // Collect product codes
+            $orderedProductCodes[] = $product->product_code;
+
+            // Check if this product already exists in order
+            $orderItem = $order->items()->where('product_id', $product->id)->first();
+
+            if ($orderItem) {
+                // Product exists: update quantity and subtotal
+                $orderItem->quantity += $quantity;
+                $orderItem->subtotal += $product->price * $quantity;
+                $orderItem->save();
+            } else {
+                // New product: add to order
+                $order->items()->create([
+                    'product_id' => $product->id,
+                    'quantity'   => $quantity,
+                    'price'      => $product->price,
+                    'subtotal'   => $product->price * $quantity,
+                ]);
+            }
+
+            // Reduce stock if pending
+            if ($product->stock >= $quantity) {
+                $product->stock -= $quantity;
+                $product->save();
+            } else {
+                $order->status          = 'out_of_stock';
+                $order->out_of_stock_at = now();
+            }
+
+            $total += $product->price * $quantity;
+        }
+
+// Step 3: Update order total
         $order->total_amount = $total;
-
-        // If any stock missing
-        if (count($outOfStockProducts) > 0) {
-            $order->status          = 'out_of_stock';
-            $order->out_of_stock_at = now();
-            $order->save();
-
-            $productList = implode(", ", $outOfStockProducts);
-
-            return redirect('/orders/outofstock')
-                ->with('error', "Stock not enough for: $productList");
-        }
-
         $order->save();
+        if (! empty($orderedProductCodes)) {
+            // Option 1: store first product code (or you could join with commas)
+            $customer->update([
+                'product_code' => implode(',', $orderedProductCodes),
+                'unknown_product_code' => !empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
+            ]);
+        }
 
         return redirect('/orders/pending')->with('success', 'Order created successfully!');
     }
@@ -221,40 +226,45 @@ class OrderController extends Controller
         return view('orders.completed', compact('orders'));
     }
 
-public function bulkShip(Request $request)
-{
-    try {
-        $orders = $request->all(); // raw array
+    public function bulkShip(Request $request)
+    {
+        try {
+            $orders = $request->all(); // raw array
 
-        if (!is_array($orders) || count($orders) === 0) {
-            return response()->json(['error' => 'Orders array is required'], 400);
+            if (! is_array($orders) || count($orders) === 0) {
+                return response()->json(['error' => 'Orders array is required'], 400);
+            }
+
+            $response = \App\Helpers\TransexHelper::createBulkOrders($orders);
+
+            if (! is_array($response) || ! isset($response['orders'])) {
+                throw new \Exception('Invalid response from Transex API');
+            }
+
+            foreach ($response['orders'] as $orderResponse) {
+                $orderId = $orderResponse['order_no'] ?? null;
+                if (! $orderId) {
+                    continue;
+                }
+
+                $o = Order::where('id', $orderId)->first();
+                if (! $o) {
+                    continue;
+                }
+
+                $o->status           = 'shipping';
+                $o->waybill_number   = $orderResponse['waybill_id'] ?? null;
+                $o->delivery_service = $orderResponse['delivery_service'] ?? ($orders[array_search($orderId, array_column($orders, 'order_id'))]['delivery_service'] ?? null); // ✅
+                $o->shipping_at      = now();
+                $o->save();
+            }
+
+            return response()->json(['success' => 'Bulk shipping completed']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $response = \App\Helpers\TransexHelper::createBulkOrders($orders);
-
-        if (!is_array($response) || !isset($response['orders'])) {
-            throw new \Exception('Invalid response from Transex API');
-        }
-
-        foreach ($response['orders'] as $orderResponse) {
-            $orderId = $orderResponse['order_no'] ?? null;
-            if (!$orderId) continue;
-
-            $o = Order::where('id', $orderId)->first();
-            if (!$o) continue;
-
-            $o->status           = 'shipping';
-            $o->waybill_number   = $orderResponse['waybill_id'] ?? null;
-            $o->delivery_service = $orderResponse['delivery_service'] ?? ($orders[array_search($orderId, array_column($orders, 'order_id'))]['delivery_service'] ?? null); // ✅
-            $o->shipping_at      = now();
-            $o->save();
-        }
-
-        return response()->json(['success' => 'Bulk shipping completed']);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
     }
-}
+
     public function bulkDetails(Request $request)
     {
         $orders = Order::with('customer')->whereIn('id', $request->order_ids)->get();
@@ -263,11 +273,11 @@ public function bulkShip(Request $request)
             return [
                 'order_id'          => $order->id,
                 'customer_name'     => $order->customer->full_name,
-                'street_address'           => $order->customer->street_address,
+                'street_address'    => $order->customer->street_address,
                 'order_description' => 'Order #' . $order->id,
-                'phone_number'    => $order->customer->phone_number,
-                'phone_number_2'   => $order->customer->phone_number_2 ?? '',
-                'total_amount'        => $order->total_amount,
+                'phone_number'      => $order->customer->phone_number,
+                'phone_number_2'    => $order->customer->phone_number_2 ?? '',
+                'total_amount'      => $order->total_amount,
                 'city'              => $order->customer->city ?? 864,
                 'remarks'           => $order->note ?? '',
             ];
@@ -306,44 +316,44 @@ public function bulkShip(Request $request)
         ]);
     }
     public function bulkShipFDE(Request $request)
-{
-    $ordersData = $request->all(); // array of orders from frontend
-    $results = [];
+    {
+        $ordersData = $request->all(); // array of orders from frontend
+        $results    = [];
 
-    foreach ($ordersData as $orderData) {
-        try {
-            $order = Order::findOrFail($orderData['order_id']);
+        foreach ($ordersData as $orderData) {
+            try {
+                $order = Order::findOrFail($orderData['order_id']);
 
-            // Call FDE Domestic helper
-            $response = \App\Helpers\FDEDomesticHelper::createOrder(
-                $order,
-                $parcelWeight = 1, 
-                $exchange = 0,
-                $city = $orderData['city'] ?? $order->customer->city
-            );
+                // Call FDE Domestic helper
+                $response = \App\Helpers\FDEDomesticHelper::createOrder(
+                    $order,
+                    $parcelWeight = 1,
+                    $exchange = 0,
+                    $city = $orderData['city'] ?? $order->customer->city
+                );
 
-            // Save order details
-            $order->status           = 'shipping';
-            $order->delivery_service = 'domestic';
-            $order->waybill_number   = $response['waybill_no'] ?? null;
-            $order->shipping_at      = now();
-            $order->save();
+                // Save order details
+                $order->status           = 'shipping';
+                $order->delivery_service = 'domestic';
+                $order->waybill_number   = $response['waybill_no'] ?? null;
+                $order->shipping_at      = now();
+                $order->save();
 
-            $results[] = [
-                'order_id' => $order->id,
-                'success'  => true,
-                'waybill'  => $order->waybill_number,
-            ];
+                $results[] = [
+                    'order_id' => $order->id,
+                    'success'  => true,
+                    'waybill'  => $order->waybill_number,
+                ];
 
-        } catch (\Exception $e) {
-            $results[] = [
-                'order_id' => $orderData['order_id'],
-                'success'  => false,
-                'error'    => $e->getMessage(),
-            ];
+            } catch (\Exception $e) {
+                $results[] = [
+                    'order_id' => $orderData['order_id'],
+                    'success'  => false,
+                    'error'    => $e->getMessage(),
+                ];
+            }
         }
-    }
 
-    return response()->json(['results' => $results]);
-}
+        return response()->json(['results' => $results]);
+    }
 }
