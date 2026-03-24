@@ -96,6 +96,8 @@
         @foreach($order->items as $item)
             <div>
                 {{ $item->product->product_code ?? 'N/A' }}
+
+
                 <strong>x{{ $item->quantity }}</strong> :
                 <span style="font-weight:600; color:
                     @if($order->status == 'pending') orange

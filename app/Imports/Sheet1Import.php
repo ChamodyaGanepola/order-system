@@ -23,76 +23,91 @@ class Sheet1Import implements ToModel, WithHeadingRow, WithCalculatedFormulas
 
     public function importFile($file)
     {
-        \Maatwebsite\Excel\Facades\Excel::import($this, $file, null, \Maatwebsite\Excel\Excel::XLSX, [
-            'sheets' => [0],
-        ]);
-    }
-public function model(array $row)
-{
-    $this->rowIndex++;
-
-    // Normalize headers
-    $row = array_change_key_case($row, CASE_LOWER);
-    $row = array_combine(
-        array_map(fn($key) => trim(str_replace(' ', '_', $key)), array_keys($row)),
-        $row
-    );
-
-    if (empty($row['full_name']) || empty($row['street_address']) || empty($row['phone_number'])) {
-        Log::warning('Missing customer info', $row);
-        return null;
+        \Maatwebsite\Excel\Facades\Excel::import($this, $file);
     }
 
-    $phone       = $this->formatPhone($row['phone_number']);
-    $addressData = AddressHelper::parseAddress($row['street_address']);
+    public function model(array $row)
+    {
+        $this->rowIndex++;
 
-    // Check for existing customer
-    $customer = Customer::where('full_name', $row['full_name'])
-        ->where('street_address', $addressData['street_address'])
-        ->first();
+        // Normalize headers
+        $row = array_change_key_case($row, CASE_LOWER);
+        $row = array_combine(
+            array_map(fn($key) => trim(str_replace(' ', '_', $key)), array_keys($row)),
+            $row
+        );
 
-    if (!$customer) {
-        // Create new customer
-        $customer = Customer::create([
-            'full_name'      => $row['full_name'],
-            'phone_number'   => $phone,
-            'phone_number_2' => isset($row['phone_number_2']) ? $this->formatPhone($row['phone_number_2']) : null,
-            'street_address' => $addressData['street_address'],
-            'city'           => $addressData['city'],
-            'district'       => $addressData['district'],
-            'province'       => $addressData['province'],
-            'product_code'   => null,
-            'other'          => $row['other'] ?? null,
-            'row_order'      => $this->rowIndex,
-            'import_batch'   => $this->importBatch,
-        ]);
-    }
+        if (empty($row['full_name']) || empty($row['street_address']) || empty($row['phone_number'])) {
+            Log::warning('Missing customer info', $row);
+            return null;
+        }
 
-    // --- Handle product codes ---
-    $variant     = isset($row['other']) ? strtolower(trim($row['other'])) : 'n/a';
-    $productCode = $row['product_code'] ?? null;
+        $phone       = $this->formatPhone($row['phone_number']);
+        $addressData = AddressHelper::parseAddress($row['street_address']);
 
-    if ($productCode) {
-        $product = Product::where('product_code', $productCode)
-            ->whereRaw('LOWER(other) = ?', [$variant])
-            ->first();
+        // Find or create customer
+        $customer = Customer::firstOrCreate(
+            [
+                'full_name'      => $row['full_name'],
+                'street_address' => $addressData['street_address'],
+            ],
+            [
+                'phone_number'   => $phone,
+                'phone_number_2' => isset($row['phone_number_2']) ? $this->formatPhone($row['phone_number_2']) : null,
+                'city'           => $addressData['city'],
+                'district'       => $addressData['district'],
+                'province'       => $addressData['province'],
+                'row_order'      => $this->rowIndex,
+                'import_batch'   => $this->importBatch,
+            ]
+        );
+
+        // ✅ ONLY product_code (NO variant)
+        $productCode = $row['product_code'] ?? null;
+
+        if (!$productCode) {
+            return $customer;
+        }
+
+        $product = Product::where('product_code', $productCode)->first();
 
         if (!$product) {
-            // Mark as unknown, keep any existing valid code
+            // Unknown product
+            $existingUnknowns = $customer->unknown_product_code
+                ? explode(',', $customer->unknown_product_code)
+                : [];
+
+            if (!in_array($productCode, $existingUnknowns)) {
+                $existingUnknowns[] = $productCode;
+            }
+
             $customer->update([
-                'unknown_product_code' => $productCode,
-            ]);
-            return $customer;
-        } else {
-            // Set valid product code
-            $customer->update([
-                'product_code' => $productCode,
+                'unknown_product_code' => implode(',', $existingUnknowns),
             ]);
 
-            // Clear unknown if it matches this code
-            if ($customer->unknown_product_code === $productCode) {
+            return $customer;
+        }
+
+        // ✅ Save valid product code (no duplicates)
+        $existingCodes = $customer->product_code
+            ? explode(',', $customer->product_code)
+            : [];
+
+        if (!in_array($productCode, $existingCodes)) {
+            $existingCodes[] = $productCode;
+        }
+
+        $customer->update([
+            'product_code' => implode(',', $existingCodes),
+        ]);
+
+        // Remove from unknown if exists
+        if ($customer->unknown_product_code) {
+            $unknowns = explode(',', $customer->unknown_product_code);
+            if (($key = array_search($productCode, $unknowns)) !== false) {
+                unset($unknowns[$key]);
                 $customer->update([
-                    'unknown_product_code' => null,
+                    'unknown_product_code' => implode(',', $unknowns) ?: null,
                 ]);
             }
         }
@@ -101,21 +116,18 @@ public function model(array $row)
         $quantity = $row['quantity'] ?? 1;
         $status   = $product->stock < $quantity ? 'out_of_stock' : 'pending';
 
-        // Find or create pending order for customer
-        $order = Order::where('customer_id', $customer->id)
-            ->where('status', 'pending')
-            ->first();
+        $order = Order::firstOrCreate(
+            [
+                'customer_id' => $customer->id,
+                'status'      => 'pending'
+            ],
+            [
+                'total_amount' => 0
+            ]
+        );
 
-        if (!$order) {
-            $order = Order::create([
-                'customer_id'  => $customer->id,
-                'total_amount' => 0,
-                'status'       => $status,
-            ]);
-        }
-
-        // Add or update order item
         $orderItem = $order->items()->where('product_id', $product->id)->first();
+
         if ($orderItem) {
             $orderItem->quantity += $quantity;
             $orderItem->subtotal += $product->price * $quantity;
@@ -130,29 +142,31 @@ public function model(array $row)
             ]);
         }
 
-        // Reduce stock if pending
+        // Reduce stock
         if ($status === 'pending') {
             $product->stock -= $quantity;
             $product->save();
         }
 
-        // Update order total
-        $order->total_amount = $order->items()->sum('subtotal');
-        $order->save();
+        $order->update([
+            'total_amount' => $order->items()->sum('subtotal')
+        ]);
+
+        return $customer;
     }
-
-    return $customer;
-}
-
 
     private function formatPhone($number)
     {
         $number = preg_replace('/[\s\-\(\)]/', '', $number);
+
         if (substr($number, 0, 1) === '0') {
-            $number = '+94' . substr($number, 1);
-        } elseif (substr($number, 0, 1) !== '+') {
-            $number = '+94' . $number;
+            return '+94' . substr($number, 1);
         }
+
+        if (substr($number, 0, 1) !== '+') {
+            return '+94' . $number;
+        }
+
         return $number;
     }
 }

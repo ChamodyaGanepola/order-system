@@ -42,7 +42,6 @@
                     <tr>
                         <th>Product Code</th>
                          <th>Product name</th>
-                        <th>Specifications</th>
                         <th>Price</th>
                         <th>Quantity</th>
                         <th>Subtotal</th>
@@ -53,28 +52,7 @@
                     <tr>
                         <td>{{ $item->product->product_code }}</td>
                          <td>{{ $item->product->name }}</td>
-                        <td>
-                            @php
-                                $specs = $item->product->other;
-                                if (is_string($specs) && $decoded = json_decode($specs, true)) {
-                                    $specs = $decoded;
-                                }
-                            @endphp
-
-                            @if(!empty($specs))
-                                @if(is_array($specs))
-                                    <ul class="mb-0">
-                                        @foreach($specs as $key => $value)
-                                            <li><strong>{{ ucfirst($key) }}:</strong> {{ $value }}</li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    {{ $specs }}
-                                @endif
-                            @else
-                                N/A
-                            @endif
-                        </td>
+                       
                         <td>Rs. {{ number_format($item->price, 2) }}</td>
                         <td>{{ $item->quantity }}</td>
                         <td>Rs. {{ number_format($item->subtotal, 2) }}</td>

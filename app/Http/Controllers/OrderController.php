@@ -36,31 +36,38 @@ class OrderController extends Controller
 
         $total = $order->items()->sum('subtotal'); // start with existing total
 
-        $outOfStockProducts = [];
+        $orderedProductCodes = [];
+        $unknownProductCodes = [];
 
-        foreach ($request->products as $productId => $quantity) {
+        foreach ($request->products as $productId => $data) {
+            $quantity = $data['quantity'] ?? 1;
 
             $product = Product::find($productId);
 
-             if (!$product || $quantity <= 0) {
-            // Product not found → treat as unknown
-            $unknownProductCodes[] = "ID:$productId";
-            continue;
-        }
 
-            // Collect product codes
-            $orderedProductCodes[] = $product->product_code;
+            // If product not found or quantity invalid → treat as unknown
+            if (! $product || $quantity <= 0) {
+                 if (! in_array($productId, $unknownProductCodes)) {
+                    $unknownProductCodes[] = $productId;
+                }
+                continue;
+            }
 
-            // Check if this product already exists in order
+            // Add to ordered codes (avoid duplicates)
+            if (! in_array($productId, $unknownProductCodes)) {
+                    $unknownProductCodes[] = $productId;
+                }
+
+            // Find existing order item
             $orderItem = $order->items()->where('product_id', $product->id)->first();
 
             if ($orderItem) {
-                // Product exists: update quantity and subtotal
+                // Update existing
                 $orderItem->quantity += $quantity;
                 $orderItem->subtotal += $product->price * $quantity;
                 $orderItem->save();
             } else {
-                // New product: add to order
+                // Create new order item
                 $order->items()->create([
                     'product_id' => $product->id,
                     'quantity'   => $quantity,
@@ -69,7 +76,7 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Reduce stock if pending
+            // Reduce stock if enough
             if ($product->stock >= $quantity) {
                 $product->stock -= $quantity;
                 $product->save();
@@ -81,19 +88,21 @@ class OrderController extends Controller
             $total += $product->price * $quantity;
         }
 
-// Step 3: Update order total
+        // Update order total
         $order->total_amount = $total;
         $order->save();
-        if (! empty($orderedProductCodes)) {
-            // Option 1: store first product code (or you could join with commas)
+
+        // Update customer codes
+        if (! empty($orderedProductCodes) || ! empty($unknownProductCodes)) {
             $customer->update([
-                'product_code' => implode(',', $orderedProductCodes),
-                'unknown_product_code' => !empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
+                'product_code'         => ! empty($orderedProductCodes) ? implode(',', $orderedProductCodes) : null,
+                'unknown_product_code' => ! empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
             ]);
         }
 
         return redirect('/orders/pending')->with('success', 'Order created successfully!');
     }
+
     public function edit(Order $order)
     {
         $products = Product::all();                // all products for dropdown
@@ -165,10 +174,9 @@ class OrderController extends Controller
                     continue;
                 }
 
-                // Treat 'other' as string, default to 'N/A'
-                $variant = $product->other ?: 'N/A';
 
-                $key = $product->product_code . ' - ' . $variant;
+
+                $key = $product->product_code;
 
                 if (! isset($outOfStockSummary[$key])) {
                     $outOfStockSummary[$key] = 0;

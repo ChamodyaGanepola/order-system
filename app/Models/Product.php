@@ -11,12 +11,10 @@ class Product extends Model
         'price',
         'stock',
         'product_code',
-        'other'
+       
     ];
 
-    protected $casts = [
-        'other' => 'string' // simple string variant
-    ];
+
 
     public function orderItems()
     {

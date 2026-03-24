@@ -120,7 +120,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Product Code</th>
-                            <th>Variant</th>
+
                             <th>Missing Quantity</th>
                         </tr>
                     </thead>
@@ -133,7 +133,7 @@
                         @endphp
                         <tr>
                             <td>{{ $code }}</td>
-                            <td>{{ $variant }}</td>
+                          
                             <td><span class="badge bg-danger">{{ $missingQty }}</span></td>
                         </tr>
                         @endforeach

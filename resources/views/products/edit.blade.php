@@ -13,11 +13,7 @@
             <input type="text" name="product_code" class="form-control" value="{{ $product->product_code }}" required>
         </div>
 
-        <div class="form-group">
-            <label>Variant / Other</label>
-            <input type="text" name="other" class="form-control" value="{{ $product->other }}">
-            @error('other') <div class="text-danger">{{ $message }}</div> @enderror
-        </div>
+        
 
         <div class="form-group">
             <label>Name</label>

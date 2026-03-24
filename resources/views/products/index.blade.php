@@ -22,7 +22,7 @@
     <thead>
         <tr>
             <th>Code</th>
-            <th>Variant</th>
+
             <th>Name</th>
             <th>Price</th>
             <th>Stock</th>
@@ -33,7 +33,7 @@
         @foreach($products as $product)
         <tr>
             <td>{{ $product->product_code }}</td>
-            <td>{{ $product->other ?? 'N/A' }}</td>
+         
             <td>{{ $product->name }}</td>
             <td>Rs.{{ number_format($product->price, 2) }}</td>
             <td>{{ $product->stock }}</td>
