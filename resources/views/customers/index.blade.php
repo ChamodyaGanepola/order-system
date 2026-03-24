@@ -104,7 +104,7 @@
             $codes[] = $customer->product_code;
         }
         if ($customer->unknown_product_code) {
-            $codes[] = '<span style="color:red; font-weight:bold;">' . $customer->unknown_product_code . ' (unknown)</span>';
+            $codes[] = '<span style="color:red; font-weight:bold;">' . $customer->unknown_product_code . ' ( need to verify)</span>';
         }
     @endphp
 

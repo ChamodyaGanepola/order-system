@@ -11,7 +11,7 @@
         @csrf
         @method('PUT')
 <div class="form-group">
-    <label for="unknown_product_code">Unknown Product Code</label>
+    <label for="unknown_product_code">Unknown Product Code - when verified remove this field</label>
     <input type="text" name="unknown_product_code" id="unknown_product_code"
            class="form-control"
            value="{{ $customer->unknown_product_code }}">
