@@ -36,7 +36,7 @@ class DashboardController extends Controller
                 $product = $item->product;
                 if (!$product) continue;
 
-                $variant = $product->other ?: 'N/A';
+                
                 $key = $product->product_code;
 
                 if (!isset($outOfStockSummary[$key])) {
