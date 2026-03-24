@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-
+use App\Models\CustomerImport;
 class Sheet1Import implements ToModel, WithHeadingRow, WithCalculatedFormulas
 {
     protected $rowIndex = 0;
@@ -88,69 +88,17 @@ class Sheet1Import implements ToModel, WithHeadingRow, WithCalculatedFormulas
             return $customer;
         }
 
-        // ✅ Save valid product code (no duplicates)
-        $existingCodes = $customer->product_code
-            ? explode(',', $customer->product_code)
-            : [];
+       $productCode = $row['product_code'] ?? null;
 
-        if (!in_array($productCode, $existingCodes)) {
-            $existingCodes[] = $productCode;
-        }
+// Always create import record (even if same customer)
+CustomerImport::create([
+    'customer_id'  => $customer->id,
+    'product_code' => $productCode,
+    'imported_at'  => now(),
+    'import_batch' => $this->importBatch,
+]);
 
-        $customer->update([
-            'product_code' => implode(',', $existingCodes),
-        ]);
 
-        // Remove from unknown if exists
-        if ($customer->unknown_product_code) {
-            $unknowns = explode(',', $customer->unknown_product_code);
-            if (($key = array_search($productCode, $unknowns)) !== false) {
-                unset($unknowns[$key]);
-                $customer->update([
-                    'unknown_product_code' => implode(',', $unknowns) ?: null,
-                ]);
-            }
-        }
-
-        // --- Order Handling ---
-        $quantity = $row['quantity'] ?? 1;
-        $status   = $product->stock < $quantity ? 'out_of_stock' : 'pending';
-
-        $order = Order::firstOrCreate(
-            [
-                'customer_id' => $customer->id,
-                'status'      => 'pending'
-            ],
-            [
-                'total_amount' => 0
-            ]
-        );
-
-        $orderItem = $order->items()->where('product_id', $product->id)->first();
-
-        if ($orderItem) {
-            $orderItem->quantity += $quantity;
-            $orderItem->subtotal += $product->price * $quantity;
-            $orderItem->save();
-        } else {
-            OrderItem::create([
-                'order_id'   => $order->id,
-                'product_id' => $product->id,
-                'quantity'   => $quantity,
-                'price'      => $product->price,
-                'subtotal'   => $product->price * $quantity,
-            ]);
-        }
-
-        // Reduce stock
-        if ($status === 'pending') {
-            $product->stock -= $quantity;
-            $product->save();
-        }
-
-        $order->update([
-            'total_amount' => $order->items()->sum('subtotal')
-        ]);
 
         return $customer;
     }

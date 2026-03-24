@@ -29,7 +29,8 @@ Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name
 Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 Route::delete('/customers-delete-all', [CustomerController::class, 'destroyAll'])
     ->name('customers.destroyAll');
-
+Route::delete('/customers/imports/delete-date', [CustomerController::class, 'deleteImportsByDate'])
+    ->name('customers.imports.deleteByDate');
 
 // Orders
 Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

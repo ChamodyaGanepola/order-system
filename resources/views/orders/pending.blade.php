@@ -24,6 +24,7 @@
             <th><i class="fas fa-user"></i> Customer</th>
             <th><i class="fas fa-money-bill-wave"></i> Total Amount</th>
             <th><i class="fas fa-tag"></i> Status</th>
+            <th>Status Date</th>
         </tr>
     </thead>
     <tbody>
@@ -36,6 +37,9 @@
                 <span style="background: #fef3c7; color: #92400e; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
                     <i class="fas fa-hourglass-half"></i> Pending
                 </span>
+            </td>
+            <td>
+                {{ $order->status_date ? \Carbon\Carbon::parse($order->status_date)->timezone('Asia/Colombo')->format('d M Y H:i') : '-' }}
             </td>
         </tr>
         @endforeach

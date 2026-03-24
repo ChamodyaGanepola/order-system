@@ -6,13 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     protected $fillable = [
-        'customer_id',
-        'total_amount',
-        'status',
-        'waybill_number',
-        'delivery_service',
-
-    ];
+    'customer_id',
+    'total_amount',
+    'status',
+    'waybill_number',
+    'delivery_service',
+    'pending_at',       // ← ADD THIS
+    'shipping_at',
+    'completed_at',
+    'rejected_at',
+    'out_of_stock_at',
+];
     protected $dates = [
         'pending_at',
         'shipping_at',

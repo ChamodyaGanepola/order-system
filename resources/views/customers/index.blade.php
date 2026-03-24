@@ -3,18 +3,39 @@
 @section('content')
 @if($customers->total() > 0)
 <div class="content-toolbar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 20px;">
-    <form method="GET" class="customer-search-form" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+   <form method="GET" class="customer-search-form" style="display:flex; gap:10px; align-items:center;">
+    <!-- Existing per_page selector -->
+    <select name="per_page" onchange="this.form.submit()" class="form-control">
+        @foreach([5, 10, 20, 50, 100] as $size)
+            <option value="{{ $size }}" {{ $perPage == $size ? 'selected' : '' }}>{{ $size }} per page</option>
+        @endforeach
+    </select>
 
+    <!-- Import date filter -->
+    <select name="import_date" onchange="this.form.submit()" class="form-control">
+        <option value="">All Import Dates</option>
+        @foreach($importDates as $date)
+            <option value="{{ $date }}" {{ request('import_date') == $date ? 'selected' : '' }}>
+                {{ \Carbon\Carbon::parse($date)->format('Y-m-d') }}
+            </option>
+        @endforeach
+    </select>
 
-
-        <select name="per_page" onchange="this.form.submit()" class="form-control">
-            @foreach([5, 10, 20, 50, 100] as $size)
-                <option value="{{ $size }}" {{ $perPage == $size ? 'selected' : '' }}>{{ $size }} per page</option>
-            @endforeach
-        </select>
-
-
+    <input type="text" name="search" placeholder="Search Name..." value="{{ request('search') }}" class="form-control">
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+<!-- Delete by Date Button -->
+@if(request('import_date'))
+    <form action="{{ route('customers.imports.deleteByDate') }}" method="POST" style="display:inline;"
+          onsubmit="return confirm('Are you sure you want to delete ALL imports for this date?');">
+        @csrf
+        @method('DELETE')
+        <input type="hidden" name="import_date" value="{{ request('import_date') }}">
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash"></i> Delete Imports for {{ \Carbon\Carbon::parse(request('import_date'))->format('Y-m-d') }}
+        </button>
     </form>
+@endif
  <div style="display:flex; gap:10px;">
     <a href="/customers/create" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;">
         <i class="fas fa-user"></i> <i class="fas fa-plus"></i> Add Customer

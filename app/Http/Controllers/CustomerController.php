@@ -17,47 +17,62 @@ class CustomerController extends Controller
 
         return redirect('/customers')->with('success', 'Customers imported!');
     }
-    public function index(Request $request)
-    {
-        $query = Customer::query();
+public function index(Request $request)
+{
+    $query = Customer::query()->with('orders');
 
-        // Search
-        if ($request->filled('search')) {
-            $query->where('full_name', 'like', '%' . $request->search . '%');
-        }
-
-                                              // Sorting
-        $sort = $request->get('sort', 'asc'); // default A-Z
-        $sort = $request->get('sort', 'latest');
-
-        if ($sort == 'latest') {
-            $query->orderBy('created_at', 'desc');
-        } elseif ($sort == 'oldest') {
-            $query->orderBy('created_at', 'asc');
-        } elseif ($sort == 'asc') {
-            $query->orderBy('full_name', 'asc');
-        } elseif ($sort == 'desc') {
-            $query->orderBy('full_name', 'desc');
-        }
-
-        // Pagination: default 10, allow user to select
-        $perPage = $request->get('per_page', 10);
-$customers = Customer::orderBy('import_batch', 'desc') // latest Excel first
-                     ->orderBy('row_order', 'asc')    // rows in same Excel
-                     ->with('orders')
-                     ->paginate($perPage)
-                     ->appends($request->all());
-
-
-        return view('customers.index', compact('customers', 'sort', 'perPage'));
+    // Search by name
+    if ($request->filled('search')) {
+        $query->where('full_name', 'like', '%' . $request->search . '%');
     }
-    /*public function index()
-    {
-        $customers = Customer::all();
-        return view('customers.index', compact('customers'));
-    }
-*/
 
+    // Filter by import date
+    if ($request->filled('import_date')) {
+        $date = $request->import_date;
+        $query->whereHas('imports', function ($q) use ($date) {
+            $q->whereDate('imported_at', $date);
+        });
+    }
+
+    // Sorting (default is by Excel upload order)
+    $sort = $request->get('sort', 'latest');
+    if ($sort == 'latest') {
+        $query->orderBy('import_batch', 'desc') // latest Excel first
+              ->orderBy('row_order', 'asc');    // rows in same Excel
+    } elseif ($sort == 'oldest') {
+        $query->orderBy('import_batch', 'asc')
+              ->orderBy('row_order', 'asc');
+    } elseif ($sort == 'asc') {
+        $query->orderBy('full_name', 'asc');
+    } elseif ($sort == 'desc') {
+        $query->orderBy('full_name', 'desc');
+    }
+
+    // Pagination
+    $perPage = $request->get('per_page', 10);
+    $customers = $query->paginate($perPage)->appends($request->all());
+
+    // Get all unique import dates for the filter dropdown
+    $importDates = \App\Models\CustomerImport::selectRaw('DATE(imported_at) as import_date')
+                    ->distinct()
+                    ->orderBy('import_date', 'desc')
+                    ->pluck('import_date');
+
+    return view('customers.index', compact('customers', 'sort', 'perPage', 'importDates'));
+}
+public function deleteImportsByDate(Request $request)
+{
+    $request->validate([
+        'import_date' => 'required|date',
+    ]);
+
+    $date = $request->import_date;
+
+    // Delete all CustomerImport records for this date
+    \App\Models\CustomerImport::whereDate('imported_at', $date)->delete();
+
+    return redirect()->back()->with('success', "All imports for $date deleted successfully!");
+}
 
 public function store(Request $request)
 {
