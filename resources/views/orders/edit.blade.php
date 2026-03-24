@@ -28,7 +28,7 @@
             <tbody>
                 @foreach($order->items as $item)
                 <tr data-product-id="{{ $item->product_id }}">
-                    <td>{{ $item->product->name }} ({{ $item->product->product_code }}) - Variant: {{ $item->product->other ?? 'N/A' }}</td>
+                    <td>{{ $item->product->name }} ({{ $item->product->product_code }}) </td>
                     <td>Rs. {{ number_format($item->price, 2) }}</td>
                     <td>
                         <input type="number" name="products[{{ $item->product_id }}]"
@@ -53,7 +53,7 @@
                             data-price="{{ $product->price }}"
                             data-stock="{{ $product->stock }}"
                             {{ $product->stock <= 0 ? 'disabled' : '' }}>
-                        {{ $product->name }} ({{ $product->product_code }}) - Variant: {{ $product->other ?? 'N/A' }} (Rs. {{ number_format($product->price,2) }}) - Stock: {{ $product->stock }}
+                        {{ $product->name }} ({{ $product->product_code }}) - (Rs. {{ number_format($product->price,2) }}) - Stock: {{ $product->stock }}
                     </option>
                 @endforeach
             </select>

@@ -26,7 +26,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'products'    => 'required|array', // array of ['product_code' => ..., 'other' => [...], 'quantity' => ...]
+            'products'    => 'required|array', 
         ]);
         $customer = Customer::findOrFail($request->customer_id);
         $order    = Order::firstOrCreate(

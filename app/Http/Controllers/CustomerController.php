@@ -77,7 +77,6 @@ public function store(Request $request)
         'city'           => $addressData['city'],
         'district'       => $addressData['district'],
         'province'       => $addressData['province'],
-        'other'          => $request->other ?? null,
         'product_code'   => $request->product_code ?? null,
     ]);
 
@@ -112,7 +111,6 @@ $customer->update([
     'city'           => $city,
     'district'       => $district,
     'province'       => $province,
-    'other'          => $request->other ?? null,
     'product_code'   => $request->product_code ?? null,
     'unknown_product_code' => $request->unknown_product_code,
 ]);

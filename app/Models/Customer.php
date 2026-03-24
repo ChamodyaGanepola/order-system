@@ -14,7 +14,6 @@ class Customer extends Model
     'street_address',
     'phone_number',
     'phone_number_2',
-    'other',
     'product_code',
     'unknown_product_code',
     'city',
