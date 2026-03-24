@@ -98,15 +98,17 @@
                 <td>{{ $customer->phone_number }}</td>
                 <td>{{ $customer->street_address }}</td>
 <td>
-    @if($customer->product_code)
-        <div>{{ $customer->product_code }}</div>
-    @endif
+    @php
+        $codes = [];
+        if ($customer->product_code) {
+            $codes[] = $customer->product_code;
+        }
+        if ($customer->unknown_product_code) {
+            $codes[] = '<span style="color:red; font-weight:bold;">' . $customer->unknown_product_code . ' to be verified</span>';
+        }
+    @endphp
 
-    @if(!empty($customer->unknown_product_code))
-        <div style="color:red; font-weight:bold;">
-            {{ $customer->unknown_product_code }} (need to verify)
-        </div>
-    @endif
+    {!! implode('<br>', $codes) !!}
 </td>
 <td>
 

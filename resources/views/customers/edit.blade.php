@@ -10,12 +10,16 @@
         onsubmit="return confirm('Are you sure you want to update this customer?');">
         @csrf
         @method('PUT')
+@if(!empty($customer->unknown_product_code))
 <div class="form-group">
-    <label for="unknown_product_code">Unknown Product Code - when verified remove this field</label>
+    <label for="unknown_product_code">
+        Unknown Product Code - when verified remove this field
+    </label>
     <input type="text" name="unknown_product_code" id="unknown_product_code"
            class="form-control"
            value="{{ $customer->unknown_product_code }}">
 </div>
+@endif
         <div class="form-group">
             <label for="full_name"><i class="fas fa-user"></i> Full Name *</label>
             <input type="text" id="full_name" name="full_name" value="{{ $customer->full_name }}" required placeholder="Customer full name">
