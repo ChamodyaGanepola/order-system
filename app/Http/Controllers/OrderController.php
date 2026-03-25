@@ -23,78 +23,80 @@ class OrderController extends Controller
         return view('orders.create', compact('customer', 'products'));
     }
     // Store order
-    public function store(Request $request)
-    {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'products'    => 'required|array',
-        ]);
+  public function store(Request $request)
+{
+    $request->validate([
+        'customer_id' => 'required|exists:customers,id',
+        'products'    => 'required|array',
+    ]);
 
-        $customer = Customer::findOrFail($request->customer_id);
+    $customer = Customer::findOrFail($request->customer_id);
 
-        // Create a new order for this customer every time
-        $order = Order::create([
-            'customer_id'  => $customer->id,
-            'status'       => 'pending',
-            'pending_at'   => now(),
-            'total_amount' => 0, // initial total, will calculate later
-        ]);
+    // Create new order
+    $order = Order::create([
+        'customer_id'  => $customer->id,
+        'status'       => 'pending',
+        'pending_at'   => now(),
+        'total_amount' => 0, // will calculate later
+    ]);
 
-        $total               = 0;
-        $orderedProductCodes = [];
-        $unknownProductCodes = [];
+    $total               = 0;
+    $orderedProductCodes = [];
+    $unknownProductCodes = [];
 
-        foreach ($request->products as $productId => $data) {
-            $quantity = $data['quantity'] ?? 1;
-            $product  = Product::find($productId);
+    foreach ($request->products as $productId => $quantity) {
+        $quantity = (int) $quantity; // cast to integer
+        $product  = Product::find($productId);
 
-            // If product not found or invalid quantity → treat as unknown
-            if (! $product || $quantity <= 0) {
-                if (! in_array($productId, $unknownProductCodes)) {
-                    $unknownProductCodes[] = $productId;
-                }
-                continue;
+        // If product not found or invalid quantity → treat as unknown
+        if (! $product || $quantity <= 0) {
+            if (! in_array($productId, $unknownProductCodes)) {
+                $unknownProductCodes[] = $productId;
             }
-
-            // Add to ordered codes
-            if (! in_array($product->product_code, $orderedProductCodes)) {
-                $orderedProductCodes[] = $product->product_code;
-            }
-
-            // Create order item
-            $order->items()->create([
-                'product_id' => $product->id,
-                'quantity'   => $quantity,
-                'price'      => $product->price,
-                'subtotal'   => $product->price * $quantity,
-            ]);
-
-            // Reduce stock if enough
-            if ($product->stock >= $quantity) {
-                $product->stock -= $quantity;
-                $product->save();
-            } else {
-                $order->status          = 'out_of_stock';
-                $order->out_of_stock_at = now();
-            }
-
-            $total += $product->price * $quantity;
+            continue;
         }
 
-        // Update order total
-        $order->total_amount = $total;
-        $order->save();
-
-        // Update customer codes (optional, if needed for tracking)
-        if (! empty($orderedProductCodes) || ! empty($unknownProductCodes)) {
-            $customer->update([
-                'product_code'         => ! empty($orderedProductCodes) ? implode(',', $orderedProductCodes) : null,
-                'unknown_product_code' => ! empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
-            ]);
+        // Add to ordered product codes
+        if (! in_array($product->product_code, $orderedProductCodes)) {
+            $orderedProductCodes[] = $product->product_code;
         }
 
-        return redirect('/orders/pending')->with('success', 'Order created successfully!');
+        // Create order item
+        $order->items()->create([
+            'product_id' => $product->id,
+            'quantity'   => $quantity,
+            'price'      => $product->price,
+            'subtotal'   => $product->price * $quantity,
+        ]);
+
+        // Reduce stock if enough
+        if ($product->stock >= $quantity) {
+            $product->stock -= $quantity;
+            $product->save();
+        } else {
+            // mark order as out of stock if stock insufficient
+            $order->status          = 'out_of_stock';
+            $order->out_of_stock_at = now();
+        }
+
+        // Add subtotal to total
+        $total += $product->price * $quantity;
     }
+
+    // Update order total
+    $order->total_amount = $total;
+    $order->save();
+
+    // Update customer product codes (for tracking)
+    if (! empty($orderedProductCodes) || ! empty($unknownProductCodes)) {
+        $customer->update([
+            'product_code'         => ! empty($orderedProductCodes) ? implode(',', $orderedProductCodes) : null,
+            'unknown_product_code' => ! empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
+        ]);
+    }
+
+    return redirect('/orders/pending')->with('success', 'Order created successfully!');
+}
 
     public function edit(Order $order)
     {
