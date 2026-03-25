@@ -6,10 +6,10 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "ext-gd": "*",
         "php": "^8.2",
-        "ext-zip": "*",
+        "ext-gd": "*",
         "ext-pdo": "*",
+        "ext-zip": "*",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1"

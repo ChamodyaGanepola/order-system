@@ -5,7 +5,8 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
-
+  use App\Exports\PendingOrdersExport;
+use Maatwebsite\Excel\Facades\Excel;
 class OrderController extends Controller
 {
     // Step 1: show all customers to select
@@ -23,77 +24,77 @@ class OrderController extends Controller
     }
     // Store order
     public function store(Request $request)
-{
-    $request->validate([
-        'customer_id' => 'required|exists:customers,id',
-        'products'    => 'required|array',
-    ]);
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'products'    => 'required|array',
+        ]);
 
-    $customer = Customer::findOrFail($request->customer_id);
+        $customer = Customer::findOrFail($request->customer_id);
 
-    // Create a new order for this customer every time
-    $order = Order::create([
-        'customer_id' => $customer->id,
-        'status'      => 'pending',
-        'pending_at'  => now(),
-        'total_amount'=> 0, // initial total, will calculate later
-    ]);
+        // Create a new order for this customer every time
+        $order = Order::create([
+            'customer_id'  => $customer->id,
+            'status'       => 'pending',
+            'pending_at'   => now(),
+            'total_amount' => 0, // initial total, will calculate later
+        ]);
 
-    $total = 0;
-    $orderedProductCodes = [];
-    $unknownProductCodes = [];
+        $total               = 0;
+        $orderedProductCodes = [];
+        $unknownProductCodes = [];
 
-    foreach ($request->products as $productId => $data) {
-        $quantity = $data['quantity'] ?? 1;
-        $product = Product::find($productId);
+        foreach ($request->products as $productId => $data) {
+            $quantity = $data['quantity'] ?? 1;
+            $product  = Product::find($productId);
 
-        // If product not found or invalid quantity → treat as unknown
-        if (! $product || $quantity <= 0) {
-            if (! in_array($productId, $unknownProductCodes)) {
-                $unknownProductCodes[] = $productId;
+            // If product not found or invalid quantity → treat as unknown
+            if (! $product || $quantity <= 0) {
+                if (! in_array($productId, $unknownProductCodes)) {
+                    $unknownProductCodes[] = $productId;
+                }
+                continue;
             }
-            continue;
+
+            // Add to ordered codes
+            if (! in_array($product->product_code, $orderedProductCodes)) {
+                $orderedProductCodes[] = $product->product_code;
+            }
+
+            // Create order item
+            $order->items()->create([
+                'product_id' => $product->id,
+                'quantity'   => $quantity,
+                'price'      => $product->price,
+                'subtotal'   => $product->price * $quantity,
+            ]);
+
+            // Reduce stock if enough
+            if ($product->stock >= $quantity) {
+                $product->stock -= $quantity;
+                $product->save();
+            } else {
+                $order->status          = 'out_of_stock';
+                $order->out_of_stock_at = now();
+            }
+
+            $total += $product->price * $quantity;
         }
 
-        // Add to ordered codes
-        if (! in_array($product->product_code, $orderedProductCodes)) {
-            $orderedProductCodes[] = $product->product_code;
+        // Update order total
+        $order->total_amount = $total;
+        $order->save();
+
+        // Update customer codes (optional, if needed for tracking)
+        if (! empty($orderedProductCodes) || ! empty($unknownProductCodes)) {
+            $customer->update([
+                'product_code'         => ! empty($orderedProductCodes) ? implode(',', $orderedProductCodes) : null,
+                'unknown_product_code' => ! empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
+            ]);
         }
 
-        // Create order item
-        $order->items()->create([
-            'product_id' => $product->id,
-            'quantity'   => $quantity,
-            'price'      => $product->price,
-            'subtotal'   => $product->price * $quantity,
-        ]);
-
-        // Reduce stock if enough
-        if ($product->stock >= $quantity) {
-            $product->stock -= $quantity;
-            $product->save();
-        } else {
-            $order->status = 'out_of_stock';
-            $order->out_of_stock_at = now();
-        }
-
-        $total += $product->price * $quantity;
+        return redirect('/orders/pending')->with('success', 'Order created successfully!');
     }
-
-    // Update order total
-    $order->total_amount = $total;
-    $order->save();
-
-    // Update customer codes (optional, if needed for tracking)
-    if (! empty($orderedProductCodes) || ! empty($unknownProductCodes)) {
-        $customer->update([
-            'product_code'         => ! empty($orderedProductCodes) ? implode(',', $orderedProductCodes) : null,
-            'unknown_product_code' => ! empty($unknownProductCodes) ? implode(',', array_unique($unknownProductCodes)) : null,
-        ]);
-    }
-
-    return redirect('/orders/pending')->with('success', 'Order created successfully!');
-}
 
     public function edit(Order $order)
     {
@@ -166,8 +167,6 @@ class OrderController extends Controller
                     continue;
                 }
 
-
-
                 $key = $product->product_code;
 
                 if (! isset($outOfStockSummary[$key])) {
@@ -185,9 +184,15 @@ class OrderController extends Controller
     public function pending(Request $request)
     {
         $perPage = $request->input('per_page', 10);
-        $orders  = Order::where('status', 'pending')
-            ->with('customer')
-            ->paginate($perPage);
+
+        $query = Order::where('status', 'pending')->with('customer');
+
+        // ✅ Filter by date
+        if ($request->filled('date')) {
+            $query->whereDate('pending_at', $request->date);
+        }
+
+        $orders = $query->paginate($perPage)->appends($request->all());
 
         return view('orders.pending', compact('orders', 'perPage'));
     }
@@ -356,4 +361,13 @@ class OrderController extends Controller
 
         return response()->json(['results' => $results]);
     }
+
+
+public function exportPending(Request $request)
+{
+    return Excel::download(
+        new PendingOrdersExport($request),
+        'pending_orders.xlsx'
+    );
+}
 }

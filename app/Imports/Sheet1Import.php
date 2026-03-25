@@ -62,35 +62,17 @@ class Sheet1Import implements ToModel, WithHeadingRow, WithCalculatedFormulas
             ]
         );
 
-        // ✅ ONLY product_code (NO variant)
-        $productCode = $row['product_code'] ?? null;
 
-        if (!$productCode) {
-            return $customer;
-        }
 
-        $product = Product::where('product_code', $productCode)->first();
+$productCode = $row['product_code'] ?? null;
 
-        if (!$product) {
-            // Unknown product
-            $existingUnknowns = $customer->unknown_product_code
-                ? explode(',', $customer->unknown_product_code)
-                : [];
+if (!$productCode) {
+    return $customer;
+}
 
-            if (!in_array($productCode, $existingUnknowns)) {
-                $existingUnknowns[] = $productCode;
-            }
+$product = Product::where('product_code', $productCode)->first();
 
-            $customer->update([
-                'unknown_product_code' => implode(',', $existingUnknowns),
-            ]);
-
-            return $customer;
-        }
-
-       $productCode = $row['product_code'] ?? null;
-
-// Always create import record (even if same customer)
+// ✅ ALWAYS save import (move here)
 CustomerImport::create([
     'customer_id'  => $customer->id,
     'product_code' => $productCode,
@@ -98,7 +80,33 @@ CustomerImport::create([
     'import_batch' => $this->importBatch,
 ]);
 
+if ($product) {
+    // Known product
+    $existingCodes = $customer->product_code
+        ? explode(',', $customer->product_code)
+        : [];
 
+    if (!in_array($productCode, $existingCodes)) {
+        $existingCodes[] = $productCode;
+    }
+
+    $customer->update([
+        'product_code' => implode(',', $existingCodes),
+    ]);
+} else {
+    // Unknown product
+    $existingUnknowns = $customer->unknown_product_code
+        ? explode(',', $customer->unknown_product_code)
+        : [];
+
+    if (!in_array($productCode, $existingUnknowns)) {
+        $existingUnknowns[] = $productCode;
+    }
+
+    $customer->update([
+        'unknown_product_code' => implode(',', $existingUnknowns),
+    ]);
+}
 
         return $customer;
     }
