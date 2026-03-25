@@ -16,7 +16,7 @@ class PendingOrdersExport implements FromCollection, WithHeadings
         $this->request = $request;
     }
 
-    // ✅ HEADERS (column names in Excel)
+    // ✅ HEADINGS (Excel columns)
     public function headings(): array
     {
         return [
@@ -24,31 +24,63 @@ class PendingOrdersExport implements FromCollection, WithHeadings
             'Customer Name',
             'Phone',
             'Address',
+            'Product Codes',
             'Total Amount',
             'Status',
             'Pending Date',
         ];
     }
+    private function formatPhone($number)
+{
+    // Remove spaces, brackets, dashes
+    $number = preg_replace('/[\s\-\(\)]/', '', $number);
+
+    // If starts with +94 → replace with 0
+    if (str_starts_with($number, '+94')) {
+        return '0' . substr($number, 3);
+    }
+
+    // If starts with 94 → replace with 0
+    if (str_starts_with($number, '94')) {
+        return '0' . substr($number, 2);
+    }
+
+    // If already starts with 0 → keep as is
+    if (str_starts_with($number, '0')) {
+        return $number;
+    }
+
+    // Otherwise assume local number → add 0
+    return '0' . $number;
+}
 
     // ✅ DATA
     public function collection()
     {
-        $query = Order::where('status', 'pending')->with('customer');
+        $query = Order::where('status', 'pending')
+            ->with('customer', 'items.product');
 
-        // Apply date filter (same as your page)
+        // ✅ Apply date filter (same as your UI)
         if ($this->request->filled('date')) {
             $query->whereDate('pending_at', $this->request->date);
         }
 
         return $query->get()->map(function ($order) {
+
+            // ✅ Product codes with quantity
+            $productCodes = $order->items->map(function ($item) {
+                return ($item->product->product_code ?? 'N/A') . ' x' . $item->quantity;
+            })->implode(', ');
+
             return [
                 $order->id,
                 $order->customer->full_name ?? '',
-                $order->customer->phone_number ?? '',
+                $this->formatPhone($order->customer->phone_number ?? ''),
                 $order->customer->street_address ?? '',
+                $productCodes, // ✅ INCLUDED
                 number_format($order->total_amount, 2),
                 ucfirst($order->status),
-                optional($order->pending_at)->format('Y-m-d H:i'),
+               optional($order->status_date)->format('Y-m-d H:i'),
             ];
         });
     }

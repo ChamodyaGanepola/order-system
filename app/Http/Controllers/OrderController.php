@@ -181,21 +181,25 @@ class OrderController extends Controller
     }
 
     // Optional: show all pending orders
-    public function pending(Request $request)
-    {
-        $perPage = $request->input('per_page', 10);
+   public function pending(Request $request)
+{
+    $perPage = $request->input('per_page', 10);
 
-        $query = Order::where('status', 'pending')->with('customer');
+    $query = Order::where('status', 'pending')->with('customer');
 
-        // ✅ Filter by date
-        if ($request->filled('date')) {
-            $query->whereDate('pending_at', $request->date);
-        }
-
-        $orders = $query->paginate($perPage)->appends($request->all());
-
-        return view('orders.pending', compact('orders', 'perPage'));
+    // ✅ If date filter exists → use it
+    if ($request->filled('date')) {
+        $query->whereDate('pending_at', $request->date);
     }
+    // ✅ ELSE → default = TODAY
+    else {
+        $query->whereDate('pending_at', now()->toDateString());
+    }
+
+    $orders = $query->paginate($perPage)->appends($request->all());
+
+    return view('orders.pending', compact('orders', 'perPage'));
+}
     // Show all orders
     public function index(Request $request)
     {

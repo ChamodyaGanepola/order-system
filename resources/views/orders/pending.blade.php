@@ -4,8 +4,11 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
     <h1><i class="fas fa-hourglass-half"></i> Pending Orders</h1>
 </div>
-<form method="GET" style="margin-bottom: 15px; display:flex; gap:10px;">
-    <input type="date" name="date" value="{{ request('date') }}" class="form-control">
+<form method="GET" style="margin-bottom: 15px; display:flex; gap:10px; align-items:center;">
+
+    <input type="date" name="date"
+        value="{{ request('date', now()->toDateString()) }}"
+        class="form-control">
 
     <select name="per_page" onchange="this.form.submit()" class="form-control">
         @foreach([5,10,25,50] as $size)
@@ -16,13 +19,18 @@
     </select>
 
     <button type="submit" class="btn btn-primary">Filter</button>
-</form>
 
+    @if($orders->total() > 0)
+        <!-- ✅ Show Export only if orders exist -->
+        <a href="{{ route('orders.pending.export', request()->all()) }}"
+           class="btn btn-success">
+            Export Excel
+        </a>
+    @endif
+
+</form>
 @if($orders->total() > 0)
-<a href="{{ route('orders.pending.export', request()->all()) }}"
-   class="btn btn-success">
-    <i class="fas fa-file-excel"></i> Export Excel
-</a>
+
 <!--
 <form method="GET" style="margin-bottom: 10px;">
     <label for="per_page">Show:</label>
