@@ -4,7 +4,29 @@
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
     <h1><i class="fas fa-truck"></i> Shipping Orders</h1>
 </div>
+<form method="GET" style="margin-bottom: 15px; display:flex; gap:10px; align-items:center;">
+    <input type="date" name="date"
+        value="{{ request('date', now()->toDateString()) }}"
+        class="form-control">
 
+    <select name="per_page" onchange="this.form.submit()" class="form-control">
+        @foreach([5,10,25,50] as $size)
+            <option value="{{ $size }}" {{ $perPage == $size ? 'selected' : '' }}>
+                {{ $size }} per page
+            </option>
+        @endforeach
+    </select>
+
+    <button type="submit" class="btn btn-primary">Filter</button>
+
+    @if($orders->total() > 0)
+        <a href="{{ route('orders.shipping.export', request()->all()) }}"
+           class="btn btn-success">
+            Export Excel
+        </a>
+    @endif
+    
+</form>
 @if($orders->count() > 0)
 <table>
     <thead>

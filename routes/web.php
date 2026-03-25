@@ -42,6 +42,7 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/pending', [OrderController::class, 'pending']);
 Route::get('/orders/completed', [OrderController::class, 'completed']);
 Route::get('/orders/shipping', [OrderController::class, 'shipping']);
+Route::get('/orders/shipping/export', [OrderController::class, 'exportShipping'])->name('orders.shipping.export');
 Route::get('/orders/rejected', [OrderController::class, 'rejected']);
 Route::get('/orders/outofstock', [OrderController::class,'outOfStock']);
 Route::post('/orders/{order}/update-status', [OrderController::class, 'updateStatus'])
