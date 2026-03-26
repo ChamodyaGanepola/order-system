@@ -27,13 +27,16 @@ class CustomerController extends Controller
             $query->where('full_name', 'like', '%' . $request->search . '%');
         }
 
-        // Filter by import date
+        // ✅ Filter by import date (default = TODAY)
         if ($request->filled('import_date')) {
             $date = $request->import_date;
-            $query->whereHas('imports', function ($q) use ($date) {
-                $q->whereDate('imported_at', $date);
-            });
+        } else {
+            $date = now()->toDateString(); // default today
         }
+
+        $query->whereHas('imports', function ($q) use ($date) {
+            $q->whereDate('imported_at', $date);
+        });
 
         // Sorting (default is by Excel upload order)
         $sort = $request->get('sort', 'latest');

@@ -3,7 +3,13 @@
 @section('content')
 <div class="dashboard-container">
     <h2 class="dashboard-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+<form method="GET" style="margin-bottom:20px; display:flex; gap:10px;">
+    <input type="date" name="date"
+    value="{{ request('date', now()->toDateString()) }}"
+    class="form-control">
 
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
     <div class="dashboard-grid">
 
         <!-- Customers -->
@@ -93,102 +99,12 @@
             </div>
         </div>
         <div class="card mt-4 shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Import Date Stats</h5>
-    </div>
-    <div class="card-body p-0">
-        @if($importDateStats->count())
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Date</th>
-                    <th>Customers Imported</th>
-                    <th>Orders Created</th>
-                    <th>Revenue (Rs.)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($importDateStats as $stat)
-                <tr>
-                    <td>{{ \Carbon\Carbon::parse($stat->import_date)->format('Y-m-d') }}</td>
-                    <td>{{ $stat->customers_count }}</td>
-                    <td>{{ $stat->orders_count }}</td>
-                    <td>{{ number_format($stat->revenue, 2) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-        @else
-        <div class="p-3 text-center text-muted">
-            <i class="fas fa-info-circle fa-2x mb-2"></i>
-            <p>No import data found!</p>
-        </div>
-        @endif
-    </div>
+
+   
 </div>
-  <!-- Out of Stock Products -->
-        <div class="dashboard-card bg-danger">
-            <div class="card-content">
-                <div>
-                    <h6><i class="fas fa-box-open"></i> Out of Stock Products</h6>
-                    <h2>{{ count($outOfStockSummary) }}</h2>
-                </div>
-                <i class="fas fa-box-open fa-3x card-icon"></i>
-            </div>
-            <div style="margin-top: 10px;">
-                <button class="btn btn-light btn-sm" onclick="toggleOutOfStockTable()">View Details</button>
-            </div>
-        </div>
 
-    </div>
-
-    <!-- Out of Stock Table (Initially Hidden) -->
-    <div id="out-of-stock-table" style="display:none; margin-top: 30px;">
-        <div class="card shadow-sm">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0"><i class="fas fa-box-open"></i> Out of Stock Product Details</h5>
-            </div>
-            <div class="card-body p-0">
-                @if(count($outOfStockSummary) > 0)
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Product Code</th>
-
-                            <th>Missing Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($outOfStockSummary as $key => $missingQty)
-                        @php
-                            $parts = explode(' - ', $key);
-                            $code = $parts[0] ?? $key;
-                            $variant = $parts[1] ?? 'N/A';
-                        @endphp
-                        <tr>
-                            <td>{{ $code }}</td>
-
-                            <td><span class="badge bg-danger">{{ $missingQty }}</span></td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                @else
-                <div class="p-3 text-center text-muted">
-                    <i class="fas fa-check-circle fa-2x mb-2"></i>
-                    <p>All products are in stock!</p>
-                </div>
-                @endif
-            </div>
-        </div>
-    </div>
 </div>
-<script>
-function toggleOutOfStockTable() {
-    const table = document.getElementById('out-of-stock-table');
-    table.style.display = table.style.display === 'none' ? 'block' : 'none';
-}
-</script>
+
 
 
 <style>

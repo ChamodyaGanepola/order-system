@@ -12,62 +12,65 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-public function index()
+    public function index(Request $request)
 {
-    // Basic stats
-    $totalCustomers   = Customer::count();
-    $totalProducts    = Product::count();
-    $pendingOrders    = Order::where('status', 'pending')->count();
-    $shippingOrders   = Order::where('status', 'shipping')->count();
-    $completedOrders  = Order::where('status', 'completed')->count();
-    $rejectedOrders   = Order::where('status', 'rejected')->count();
-    $outOfStockOrders = Order::where('status', 'out_of_stock')->count();
-    $totalOrders      = Order::where('status', '!=', 'out_of_stock')->count();
-    $totalRevenue     = Order::sum('total_amount');
+    // ✅ Selected date (default today)
+    $date = $request->input('date', now()->toDateString());
 
-    // Out-of-stock summary
-    $outOfStockSummary = [];
-    $outOfStockOrdersList = Order::where('status', 'out_of_stock')
-        ->with('items.product')
+    // ✅ Customers (by import date)
+    $totalCustomers = Customer::whereHas('imports', function ($q) use ($date) {
+        $q->whereDate('imported_at', $date);
+    })->count();
+
+    // ✅ Products (no filter)
+    $totalProducts = Product::count();
+
+    // ✅ Orders by status (each uses correct column)
+    $pendingOrders = Order::where('status', 'pending')
+        ->whereDate('pending_at', $date)
+        ->count();
+
+    $shippingOrders = Order::where('status', 'shipping')
+        ->whereDate('shipping_at', $date)
+        ->count();
+
+    $completedOrders = Order::where('status', 'completed')
+        ->whereDate('completed_at', $date)
+        ->count();
+
+    $rejectedOrders = Order::where('status', 'rejected')
+        ->whereDate('rejected_at', $date)
+        ->count();
+
+    $outOfStockOrders = Order::where('status', 'out_of_stock')
+        ->whereDate('out_of_stock_at', $date)
+        ->count();
+
+    // ✅ TOTAL ORDERS (clean logic)
+    $totalOrders = $pendingOrders + $shippingOrders + $completedOrders + $rejectedOrders;
+
+    // ✅ REVENUE (only valid earning statuses)
+    $totalRevenue = Order::where(function ($q) use ($date) {
+        $q->where(function ($q2) use ($date) {
+            $q2->where('status', 'pending')->whereDate('pending_at', $date);
+        })->orWhere(function ($q2) use ($date) {
+            $q2->where('status', 'shipping')->whereDate('shipping_at', $date);
+        })->orWhere(function ($q2) use ($date) {
+            $q2->where('status', 'completed')->whereDate('completed_at', $date);
+        });
+    })->sum('total_amount');
+
+    // ✅ Import stats (latest first)
+    $importDateStats = CustomerImport::select(
+            DB::raw('DATE(imported_at) as import_date'),
+            DB::raw('COUNT(DISTINCT customer_id) as customers_count'),
+        )
+        ->groupBy('import_date')
+        ->orderBy('import_date', 'desc') // ✅ latest first
         ->get();
-    foreach ($outOfStockOrdersList as $order) {
-        foreach ($order->items as $item) {
-            if (!$item->product) continue;
-            $key = $item->product->product_code;
-            $outOfStockSummary[$key] = ($outOfStockSummary[$key] ?? 0) + $item->quantity;
-        }
-    }
-
-
-
-$importDateStats = CustomerImport::select(
-        DB::raw('DATE(imported_at) as import_date'),
-        DB::raw('COUNT(DISTINCT customer_id) as customers_count'),
-    )
-    ->groupBy('import_date')
-    ->orderBy('import_date', 'desc')
-    ->get()
-    ->map(function ($import) {
-        // Get total orders for customers imported that day
-        $ordersCount = \App\Models\Order::whereIn('customer_id', function($query) use ($import) {
-            $query->select('customer_id')
-                  ->from('customer_imports')
-                  ->whereDate('imported_at', $import->import_date);
-        })->count();
-
-        $revenue = \App\Models\Order::whereIn('customer_id', function($query) use ($import) {
-            $query->select('customer_id')
-                  ->from('customer_imports')
-                  ->whereDate('imported_at', $import->import_date);
-        })->sum('total_amount');
-
-        $import->orders_count = $ordersCount;
-        $import->revenue = $revenue;
-
-        return $import;
-    });
 
     return view('dashboard.dashboard', compact(
+        'date',
         'totalCustomers',
         'totalProducts',
         'pendingOrders',
@@ -77,8 +80,7 @@ $importDateStats = CustomerImport::select(
         'outOfStockOrders',
         'totalOrders',
         'totalRevenue',
-        'outOfStockSummary',
-        'importDateStats' // pass to blade
+        'importDateStats'
     ));
 }
 }

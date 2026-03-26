@@ -507,7 +507,7 @@ textarea {
         <li><a href="/orders/shipping" class="nav-link"><i class="fas fa-truck"></i> Shipping</a></li>
                 <li><a href="/orders/completed" class="nav-link"><i class="fas fa-check-circle"></i> Completed</a></li>
         <li><a href="/orders/rejected" class="nav-link"><i class="fas fa-times-circle"></i> Rejected</a></li>
-        <li><a href="/orders/outofstock" class="nav-link"><i class="fas fa-exclamation-triangle"></i> Out of Stock</a></li>
+
 
 
     </ul>

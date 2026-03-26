@@ -12,14 +12,15 @@
     </select>
 
     <!-- Import date filter -->
-    <select name="import_date" onchange="this.form.submit()" class="form-control">
-        <option value="">All Import Dates</option>
-        @foreach($importDates as $date)
-            <option value="{{ $date }}" {{ request('import_date') == $date ? 'selected' : '' }}>
-                {{ \Carbon\Carbon::parse($date)->format('Y-m-d') }}
-            </option>
-        @endforeach
-    </select>
+   <select name="import_date" onchange="this.form.submit()" class="form-control">
+    <option value="">All Import Dates</option>
+    @foreach($importDates as $date)
+        <option value="{{ $date }}"
+            {{ request('import_date', now()->toDateString()) == $date ? 'selected' : '' }}>
+            {{ \Carbon\Carbon::parse($date)->format('Y-m-d') }}
+        </option>
+    @endforeach
+</select>
 
     <input type="text" name="search" placeholder="Search Name..." value="{{ request('search') }}" class="form-control">
     <button type="submit" class="btn btn-primary">Filter</button>
