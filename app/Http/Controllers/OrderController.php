@@ -206,15 +206,33 @@ class OrderController extends Controller
         return view('orders.pending', compact('orders', 'perPage'));
     }
     // Show all orders
-    public function index(Request $request)
-    {
-        $perPage = $request->input('per_page', 10); // use the value from request or default 10
-        $orders  = Order::with('customer')
-            ->paginate($perPage);
+   public function index(Request $request)
+{
+    $perPage = $request->input('per_page', 10);
 
-        return view('orders.index', compact('orders', 'perPage'));
+    $query = Order::with('customer');
+
+    // Filter by STATUS
+    if ($request->filled('status') && $request->status !== 'all') {
+        $query->where('status', $request->status);
     }
 
+    //  Filter by DATE (based on status)
+    if ($request->filled('date')) {
+        $date = $request->date;
+
+        $query->where(function ($q) use ($date) {
+            $q->whereDate('pending_at', $date)
+              ->orWhereDate('shipping_at', $date)
+              ->orWhereDate('completed_at', $date)
+              ->orWhereDate('rejected_at', $date);
+        });
+    }
+
+    $orders = $query->paginate($perPage)->appends($request->all());
+
+    return view('orders.index', compact('orders', 'perPage'));
+}
     // Show shipping orders
 
     public function shipping(Request $request)

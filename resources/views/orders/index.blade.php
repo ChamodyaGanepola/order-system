@@ -22,7 +22,26 @@
     </select>
     <span>orders per page</span>
 </form>
+<form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
 
+    <!-- DATE FILTER -->
+    <input type="date" name="date"
+        value="{{ request('date') }}"
+        class="form-control">
+
+    <!-- STATUS FILTER -->
+    <select name="status" class="form-control">
+        <option value="all">All Status</option>
+        <option value="pending" {{ request('status')=='pending'?'selected':'' }}>Pending</option>
+        <option value="shipping" {{ request('status')=='shipping'?'selected':'' }}>Shipping</option>
+        <option value="completed" {{ request('status')=='completed'?'selected':'' }}>Completed</option>
+        <option value="rejected" {{ request('status')=='rejected'?'selected':'' }}>Rejected</option>
+        <option value="out_of_stock" {{ request('status')=='out_of_stock'?'selected':'' }}>Out of Stock</option>
+    </select>
+
+    <button type="submit" class="btn btn-primary">Filter</button>
+
+</form>
 
 <table class="table table-bordered">
     <thead>
@@ -119,7 +138,8 @@
     border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; width: 350px;">
 
     <h4>Shipping Details</h4>
-    <form id="shipping-form">
+
+        <form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:30px;">
         <input type="hidden" id="selected_order_ids">
 
         <div class="form-group" style="margin-bottom:10px;">
@@ -471,6 +491,26 @@ form[method="GET"] select {
 </style>
 
 @else
+<form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
+
+    <!-- DATE FILTER -->
+    <input type="date" name="date"
+        value="{{ request('date') }}"
+        class="form-control">
+
+    <!-- STATUS FILTER -->
+    <select name="status" class="form-control">
+        <option value="all">All Status</option>
+        <option value="pending" {{ request('status')=='pending'?'selected':'' }}>Pending</option>
+        <option value="shipping" {{ request('status')=='shipping'?'selected':'' }}>Shipping</option>
+        <option value="completed" {{ request('status')=='completed'?'selected':'' }}>Completed</option>
+        <option value="rejected" {{ request('status')=='rejected'?'selected':'' }}>Rejected</option>
+        <option value="out_of_stock" {{ request('status')=='out_of_stock'?'selected':'' }}>Out of Stock</option>
+    </select>
+
+    <button type="submit" class="btn btn-primary">Filter</button>
+
+</form>
 <div class="empty-state text-center">
     <i class="fas fa-boxes" style="font-size:48px"></i>
     <h3>No Orders Found</h3>
