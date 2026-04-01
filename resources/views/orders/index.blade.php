@@ -8,12 +8,10 @@
     </a>
 </div>
 
-@if($orders->count() > 0)
-<button id="bulk_ship_btn" class="btn btn-success mb-3">
-    Ship Selected Pending Orders
-</button>
 
-<form method="GET" class="per-page-form">
+<!-- FILTER FORM ALWAYS VISIBLE -->
+<form method="GET" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:30px;">
+    <!-- Per Page -->
     <label for="per_page">Show</label>
     <select name="per_page" id="per_page" onchange="this.form.submit()" class="form-control form-control-sm">
         @foreach([5,10,20,50,100] as $size)
@@ -21,28 +19,37 @@
         @endforeach
     </select>
     <span>orders per page</span>
-</form>
-<form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:30px;">
-        <input type="hidden" id="selected_order_ids">
 
-    <!-- DATE FILTER -->
+    <!-- Date Filter -->
     <input type="date" name="date"
-        value="{{ request('date') }}"
-        class="form-control">
+           value="{{ request('date') ?? now()->toDateString() }}"
+           class="form-control">
 
-    <!-- STATUS FILTER -->
+    <!-- Status Filter -->
     <select name="status" class="form-control">
-        <option value="all">All Status</option>
-        <option value="pending" {{ request('status')=='pending'?'selected':'' }}>Pending</option>
-        <option value="shipping" {{ request('status')=='shipping'?'selected':'' }}>Shipping</option>
-        <option value="completed" {{ request('status')=='completed'?'selected':'' }}>Completed</option>
-        <option value="rejected" {{ request('status')=='rejected'?'selected':'' }}>Rejected</option>
-        <option value="out_of_stock" {{ request('status')=='out_of_stock'?'selected':'' }}>Out of Stock</option>
+        <option value="all" {{ request('status')=='all' ? 'selected' : '' }}>All Status</option>
+        <option value="pending" {{ request('status')=='pending' ? 'selected' : '' }}>Pending</option>
+        <option value="shipping" {{ request('status')=='shipping' ? 'selected' : '' }}>Shipping</option>
+        <option value="completed" {{ request('status')=='completed' ? 'selected' : '' }}>Completed</option>
+        <option value="rejected" {{ request('status')=='rejected' ? 'selected' : '' }}>Rejected</option>
+        <option value="out_of_stock" {{ request('status')=='out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
     </select>
 
+    <!-- Submit Button -->
     <button type="submit" class="btn btn-primary">Filter</button>
-
 </form>
+@if($orders->count() === 0)
+    <div class="empty-state">
+        <i class="fas fa-boxes" style="font-size:48px;"></i>
+        <h3>No Orders Found for {{ request('date') ?? now()->toDateString() }}</h3>
+        <p>Select another date or status above to try again.</p>
+    </div>
+@endif
+@if($orders->count() > 0)
+<button id="bulk_ship_btn" class="btn btn-success mb-3">
+    Ship Selected Pending Orders
+</button>
+
 
 <table class="table table-bordered">
     <thead>
@@ -131,6 +138,7 @@
         Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} orders
     </div>
 </div>
+@endif
 @endif
 
 <!-- Shipping Modal -->
@@ -490,31 +498,5 @@ form[method="GET"] select {
 @media (max-width: 768px) { .pagination-container { flex-direction: column; align-items: center; gap: 8px; } }
 </style>
 
-@else
-<form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
 
-    <!-- DATE FILTER -->
-    <input type="date" name="date"
-        value="{{ request('date') }}"
-        class="form-control">
-
-    <!-- STATUS FILTER -->
-    <select name="status" class="form-control">
-        <option value="all">All Status</option>
-        <option value="pending" {{ request('status')=='pending'?'selected':'' }}>Pending</option>
-        <option value="shipping" {{ request('status')=='shipping'?'selected':'' }}>Shipping</option>
-        <option value="completed" {{ request('status')=='completed'?'selected':'' }}>Completed</option>
-        <option value="rejected" {{ request('status')=='rejected'?'selected':'' }}>Rejected</option>
-        <option value="out_of_stock" {{ request('status')=='out_of_stock'?'selected':'' }}>Out of Stock</option>
-    </select>
-
-    <button type="submit" class="btn btn-primary">Filter</button>
-
-</form>
-<div class="empty-state text-center">
-    <i class="fas fa-boxes" style="font-size:48px"></i>
-    <h3>No Orders Found</h3>
-    <p>Create your first order by selecting a customer</p>
-</div>
-@endif
 @endsection

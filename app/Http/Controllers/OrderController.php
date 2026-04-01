@@ -209,25 +209,24 @@ class OrderController extends Controller
    public function index(Request $request)
 {
     $perPage = $request->input('per_page', 10);
+    $status  = $request->input('status', 'all');
+    $date    = $request->input('date', now()->toDateString());
 
     $query = Order::with('customer');
 
     // Filter by STATUS
-    if ($request->filled('status') && $request->status !== 'all') {
-        $query->where('status', $request->status);
+    if($status !== 'all') {
+        $query->where('status', $status);
     }
 
-    //  Filter by DATE (based on status)
-    if ($request->filled('date')) {
-        $date = $request->date;
-
-        $query->where(function ($q) use ($date) {
-            $q->whereDate('pending_at', $date)
-              ->orWhereDate('shipping_at', $date)
-              ->orWhereDate('completed_at', $date)
-              ->orWhereDate('rejected_at', $date);
-        });
-    }
+    // Filter by DATE on relevant status timestamps
+    $query->where(function($q) use ($date) {
+        $q->whereDate('pending_at', $date)
+          ->orWhereDate('shipping_at', $date)
+          ->orWhereDate('completed_at', $date)
+          ->orWhereDate('rejected_at', $date)
+          ->orWhereDate('out_of_stock_at', $date);
+    });
 
     $orders = $query->paginate($perPage)->appends($request->all());
 
