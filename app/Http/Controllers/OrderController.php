@@ -206,7 +206,7 @@ class OrderController extends Controller
         return view('orders.pending', compact('orders', 'perPage'));
     }
     // Show all orders
-   public function index(Request $request)
+public function index(Request $request)
 {
     $perPage = $request->input('per_page', 10);
     $status  = $request->input('status', 'all');
@@ -228,7 +228,12 @@ class OrderController extends Controller
           ->orWhereDate('out_of_stock_at', $date);
     });
 
-    $orders = $query->paginate($perPage)->appends($request->all());
+    // Check if "All" is selected
+    if ($perPage === 'all') {
+        $orders = $query->get(); // get all without pagination
+    } else {
+        $orders = $query->paginate((int)$perPage)->appends($request->all());
+    }
 
     return view('orders.index', compact('orders', 'perPage'));
 }

@@ -14,7 +14,7 @@
     <!-- Per Page -->
     <label for="per_page">Show</label>
     <select name="per_page" id="per_page" onchange="this.form.submit()" class="form-control form-control-sm">
-        @foreach([5,10,20,50,100] as $size)
+        @foreach([5,10,20,50,100,'all'] as $size)
             <option value="{{ $size }}" {{ $perPage == $size ? 'selected' : '' }}>{{ $size }}</option>
         @endforeach
     </select>
