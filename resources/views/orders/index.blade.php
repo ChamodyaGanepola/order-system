@@ -22,7 +22,8 @@
     </select>
     <span>orders per page</span>
 </form>
-<form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
+<form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:30px;">
+        <input type="hidden" id="selected_order_ids">
 
     <!-- DATE FILTER -->
     <input type="date" name="date"
@@ -138,8 +139,7 @@
     border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; width: 350px;">
 
     <h4>Shipping Details</h4>
-
-        <form method="GET" style="display:flex; gap:10px; align-items:center; margin-bottom:30px;">
+    <form id="shipping-form">
         <input type="hidden" id="selected_order_ids">
 
         <div class="form-group" style="margin-bottom:10px;">
