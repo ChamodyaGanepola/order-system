@@ -129,16 +129,21 @@
     </tbody>
 </table>
 
-@if($orders->total() > 0)
-<div class="pagination-container" style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-    <div class="pagination-links">
-        {{ $orders->appends(request()->query())->links('vendor.pagination.custom') }}
+@if($orders instanceof \Illuminate\Pagination\LengthAwarePaginator)
+    <div class="pagination-container" style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div class="pagination-links">
+            {{ $orders->appends(request()->query())->links('vendor.pagination.custom') }}
+        </div>
+        <div class="pagination-summary" style="font-size: 14px; color: #555;">
+            Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} orders
+        </div>
     </div>
-    <div class="pagination-summary" style="font-size: 14px; color: #555;">
-        Showing {{ $orders->firstItem() }} to {{ $orders->lastItem() }} of {{ $orders->total() }} orders
+@elseif($orders instanceof \Illuminate\Database\Eloquent\Collection && $orders->count() > 0)
+    <div class="pagination-summary" style="margin-top: 20px; font-size: 14px; color: #555;">
+        Showing all {{ $orders->count() }} orders
     </div>
-</div>
 @endif
+
 @endif
 
 <!-- Shipping Modal -->
