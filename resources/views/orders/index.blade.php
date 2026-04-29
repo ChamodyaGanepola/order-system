@@ -160,6 +160,7 @@
             <select id="delivery_service_input" class="form-control">
                 <option value="transexpress" selected>Transexpress (Sri Lanka)</option>
                 <option value="domestic">Fadar Express / Domestic</option>
+                   <option value="royalexpress">Royal Express </option>
             </select>
         </div>
 
@@ -305,6 +306,27 @@ function submitShippingBulk() {
     } else if (deliveryService === 'domestic') {
         // FDE Domestic: send single orders to backend
         fetch('/api/orders/bulk-ship-fde', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(selected.map(id => ({ order_id: id }))) // just array of order IDs
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.results) {
+                let successCount = data.results.filter(r => r.success).length;
+                let failed = data.results.filter(r => !r.success);
+                alert(`${successCount} orders shipped successfully.` +
+                    (failed.length > 0 ? ` Failed: ${failed.map(f => `#${f.order_id}`).join(', ')}` : ''));
+                location.reload();
+            } else if (data.error) {
+                alert(data.error);
+            }
+        })
+        .catch(err => { console.error(err); alert('FDE Domestic bulk shipping failed'); });
+    }
+    else if (deliveryService === 'royalexpress') {
+        // FDE Domestic: send single orders to backend
+        fetch('/api/orders/bulk-ship-royalexpress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify(selected.map(id => ({ order_id: id }))) // just array of order IDs

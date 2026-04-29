@@ -415,6 +415,60 @@ public function exportShipping(Request $request)
 
         return response()->json(['results' => $results]);
     }
+        public function bulkShipRoyalExpress(Request $request)
+    {
+        try {
+            $ordersData = $request->all(); // array of orders from frontend
+
+            if (!is_array($ordersData) || count($ordersData) === 0) {
+                return response()->json(['error' => 'Orders array is required'], 400);
+            }
+
+            // Fetch orders from database with customer relationship
+            $orderIds = array_column($ordersData, 'order_id');
+            $orders = Order::with('customer')->whereIn('id', $orderIds)->get();
+
+            if ($orders->isEmpty()) {
+                return response()->json(['error' => 'No valid orders found'], 400);
+            }
+
+            // Call RoyalExpress helper for bulk order creation
+            $response = \App\Helpers\RoyalExpressHelper::createBulkOrders(
+                $orders
+            );
+
+            if (!isset($response['data'])) {
+                throw new \Exception('Invalid response from RoyalExpress API');
+            }
+
+            $results = [];
+
+            foreach ($response['data'] as $index => $waybill) {
+                if (!isset($orders[$index])) {
+                    continue;
+                }
+
+                $order = $orders[$index];
+
+                $order->status           = 'shipping';
+                $order->delivery_service = 'royal_express';
+                $order->waybill_number   = $waybill;
+                $order->shipping_at      = now();
+                $order->save();
+
+                $results[] = [
+                    'order_id' => $order->id,
+                    'success'  => true,
+                    'waybill'  => $order->waybill_number,
+                ];
+            }
+
+            return response()->json(['results' => $results]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     public function exportPending(Request $request)
     {
